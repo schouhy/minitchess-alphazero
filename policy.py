@@ -75,78 +75,24 @@ class Network(torch.nn.Module):
         return dist, value
 
 
-class MonteCarloTreeSearch:
-    def __init__(self, environment, model, cpuct):
-        self._environment = environment
-        self._model = model
-        self._cpuct = cpuct
-        self._data = {
-            'Q': {},
-            'N': {},
-            'P': {},
-            'terminal': {},
-            'visited': [],
-            'legal_moves': {},
-        }
-
-    def __getitem__(self, item):
-        return self._data.get(item, None)
-
-    def search(self, episode):
-        node = episode.get_observation()
-        if node not in self['visited']:
-            self['visited'].append(node)
-            self['terminal'][node] = episode.is_done()
-            if self['terminal'][node]:
-                return -1
-            legal_moves = episode.get_legal_moves()
-            self['Q'][node] = np.zeros(len(legal_moves))
-            self['N'][node] = np.zeros(len(legal_moves))
-            p, v = self._model(episode.get_board_array())
-            self['P'][node] = p[0][legal_moves].softmax(0).data.cpu().numpy()
-            self['legal_moves'][node] = legal_moves
-            return -v[0]
-
-        if self['terminal'][node]:
-            return -1
-
-        Q, N, P = self['Q'][node], self['N'][node], self['P'][node]
-        legal_moves = self['legal_moves'][node]
-
-        u = Q + self._cpuct * P * np.sqrt(N.sum()) / (1 + N)
-        action = u.argmax()
-        episode.step(legal_moves[action], return_status=False)
-        v = self.search(episode)
-
-        Q[action] = (N[action] * Q[action] + v) / (N[action] + 1)
-        N[action] += 1
-        return -v
-
-
 class SimpleAlphaZeroPolicy(Policy):
-    def __init__(self, environment, num_simulations=200, cpuct=1):
+    def __init__(self, environment, num_simulations=200):
         self._num_simulations = num_simulations
         self._environment = environment
         self._network = Network(num_actions=NUM_ACTIONS)
-        self._cpuct = cpuct
-        self.init_mcts()
-
-    def init_mcts(self):
-        self.mcts = MonteCarloTreeSearch(self._environment, self._network,
-                                         self._cpuct)
 
     @property
     def model(self):
         return self._network
 
-    def get_distribution(self, observation):
+    def get_distribution(self, observation, mcts):
         with torch.no_grad():
             self._network.eval().cpu()
             for _ in range(self._num_simulations):
                 episode, _ = self._environment.new_episode(fen=observation)
-                self.mcts.search(episode)
-            legal_moves = self.mcts['legal_moves'][observation]
-            N = self.mcts['N'][observation]
+                mcts.search(episode)
+            legal_moves = mcts['legal_moves'][observation]
+            N = mcts['N'][observation]
             dist = N / N.sum()
             return {'legal_moves': legal_moves, 'pi': dist}
 

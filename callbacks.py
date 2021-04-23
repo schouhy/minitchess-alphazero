@@ -5,9 +5,8 @@ from dataset import SimpleAlphaZeroDataset
 
 
 class InfoRecorder(BaseCallback):
-    def __init__(self, referee, dataset: SimpleAlphaZeroDataset):
+    def __init__(self, dataset: SimpleAlphaZeroDataset):
         self._dataset = dataset
-        self._referee = referee
     
     def on_episode_begin(self, initial_observation):
         self._episode_record = []
@@ -16,8 +15,6 @@ class InfoRecorder(BaseCallback):
 
     def on_step_end(self, action, observation, reward, done):
         info = {'observation': self._observation}
-#         player = (self._referee.turn - 1) % len(self._referee._agent_tuple)
-#         info['player'] = player
         info['action'] = action.action
         info.update(action.info)
         self._episode_record.append(info)
@@ -37,19 +34,26 @@ class MonteCarloInit(BaseCallback):
         self._agent = agent
     
     def on_episode_begin(self, initial_observation):
-        self._agent.policy.init_mcts()
+        self._agent.init_mcts()
 
 
 class WeightUpdater(BaseCallback):
+    _instance_counter = 0
     def __init__(self, learner, dataset, update_interval, init_episodes=0):
+        self._instance_counter += 1
+        self._name = f'{self}_{self._instance_counter}'
+        print(self._name)
         self._learner = learner
         self._dataset = dataset
         self._update_interval = update_interval
         self._episode_counter = -init_episodes
 
     def on_episode_end(self):
+        print(f'{self._name}: {self._episode_counter}')
         self._episode_counter += 1
+        print(f'{self._name}: {self._episode_counter}')
         if (self._episode_counter > 0)  and (self._episode_counter % self._update_interval == 0):
+            print('enter')
             self._episode_counter = 0
             self._learner.update(self._dataset)
 
