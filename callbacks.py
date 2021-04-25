@@ -38,22 +38,15 @@ class MonteCarloInit(BaseCallback):
 
 
 class WeightUpdater(BaseCallback):
-    _instance_counter = 0
     def __init__(self, learner, dataset, update_interval, init_episodes=0):
-        self._instance_counter += 1
-        self._name = f'{self}_{self._instance_counter}'
-        print(self._name)
         self._learner = learner
         self._dataset = dataset
         self._update_interval = update_interval
         self._episode_counter = -init_episodes
 
     def on_episode_end(self):
-        print(f'{self._name}: {self._episode_counter}')
         self._episode_counter += 1
-        print(f'{self._name}: {self._episode_counter}')
         if (self._episode_counter > 0)  and (self._episode_counter % self._update_interval == 0):
-            print('enter')
             self._episode_counter = 0
             self._learner.update(self._dataset)
 
