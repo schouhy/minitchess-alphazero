@@ -1,0 +1,3 @@
+Uses erlyx version:
+
+3bb2453a945fec76fe7394bbc433f85bff37e281
