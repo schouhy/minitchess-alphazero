@@ -4,7 +4,7 @@ repo: `https://github.com/schouhy/erlyx.git`
 
 branch `main`
 
-commit `4031c7715b187082745990fd8fa856d75822599c`
+commit `0f6409c3ff6aea417d89c7e8922db99be7edc606`
 
 -----
 
@@ -15,4 +15,5 @@ repo: `https://github.com/schouhy/python-chess.git`
 branch `minitchess`
 
 commit: `a4cf4ddda739f50568b0fd78662a3c3185b426c5`
+
 
