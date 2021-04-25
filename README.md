@@ -4,7 +4,7 @@ repo: `https://github.com/schouhy/erlyx.git`
 
 branch `main`
 
-commit `3bb2453a945fec76fe7394bbc433f85bff37e281`
+commit `4031c7715b187082745990fd8fa856d75822599c`
 
 -----
 
