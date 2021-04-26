@@ -3,7 +3,7 @@ from erlyx.environment import BaseEnvironment, Episode
 from chess import Board, Move, STARTING_FEN
 from erlyx.types import EpisodeStatus
 import json
-
+import pathlib 
 
 class TerminatedEpisodeStepException(BaseException):
     pass
@@ -13,7 +13,7 @@ class IlegalMoveException(BaseException):
     pass
 
 
-with open('moves_dict.json', 'r') as file:
+with open(pathlib.Path(__file__).parent.absolute()/'moves_dict.json', 'r') as file:
     MOVES_DICT = json.load(file)
 MOVES_DICT = {True: MOVES_DICT['w'], False: MOVES_DICT['b']}
 MOVES_DICT_INV = {side: {v: k for k, v in MOVES_DICT[side].items()} for side in [True, False]}
