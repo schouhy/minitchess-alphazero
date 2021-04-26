@@ -15,7 +15,8 @@ class InfoRecorder(BaseCallback):
 
     def on_step_end(self, action, observation, reward, done):
         info = {'observation': self._observation}
-        info['action'] = action.action
+        info['action'] = int(action.action)
+        info['pi'] = info['pi'].tolist()
         info.update(action.info)
         self._episode_record.append(info)
         self._episode_reward = reward
