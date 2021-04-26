@@ -5,7 +5,7 @@ from exp.dataset import SimpleAlphaZeroDataset
 
 
 class InfoRecorder(BaseCallback):
-    def __init__(self, dataset: SimpleAlphaZeroDataset):
+    def __init__(self, dataset):
         self._dataset = dataset
     
     def on_episode_begin(self, initial_observation):

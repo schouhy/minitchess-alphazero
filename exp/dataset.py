@@ -1,5 +1,7 @@
-from torch.utils.data import Dataset
 from collections import deque
+
+import requets
+from torch.utils.data import Dataset
 
 
 class SimpleAlphaZeroDataset(Dataset):
@@ -14,4 +16,12 @@ class SimpleAlphaZeroDataset(Dataset):
 
     def __getitem__(self, i):
         return self._memory[i]
-    
+
+
+class RemoteDataset:
+    def __init__(self, url):
+        self._url = url
+
+    def push(self, data):
+        requests.post(self._url, json=data)
+
