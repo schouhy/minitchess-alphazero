@@ -1,7 +1,7 @@
 from erlyx.learners import BaseLearner
 from torch.utils.data import DataLoader
-from environment import MinitChessEpisode, NUM_ACTIONS
-from dataset import SimpleAlphaZeroDataset
+from exp.environment import MinitChessEpisode, NUM_ACTIONS
+from exp.dataset import SimpleAlphaZeroDataset
 import numpy as np
 import torch
 

@@ -1,7 +1,7 @@
 from collections import deque
 
 from erlyx.callbacks import BaseCallback
-from dataset import SimpleAlphaZeroDataset
+from exp.dataset import SimpleAlphaZeroDataset
 
 
 class InfoRecorder(BaseCallback):
