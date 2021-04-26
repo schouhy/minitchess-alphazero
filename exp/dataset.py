@@ -1,6 +1,6 @@
 from collections import deque
 
-import requets
+import requests
 from torch.utils.data import Dataset
 
 
