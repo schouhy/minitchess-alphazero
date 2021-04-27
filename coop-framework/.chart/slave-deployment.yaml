@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slave-deployment
+  namespace: chou-pruebas
+  labels:
+    app: slave
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: slave
+  template:
+    metadata:
+      labels:
+        app: slave
+    spec:
+      containers:
+      - name: slave
+        image: schouhy/minitchess-alphazero:1
+        command: ["python", "-m", "app.slave.slave"]
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: flask
+          protocol: TCP
+        env:
+        - name: MASTER_FLASK_URL
+          value: "http://master-flask-service:5000"
+        - name: WEIGHTS_PATH
+          value: /data/weights.sd

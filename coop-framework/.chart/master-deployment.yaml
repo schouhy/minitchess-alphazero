@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master-deployment
+  namespace: chou-pruebas
+  labels:
+    app: master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: master
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      containers:
+      - name: master
+        image: schouhy/minitchess-alphazero:1
+        command: ["python", "-m", "app.master.master"]
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: flask
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /data
+          name: data
+        env:
+        - name: WEIGHTS_PATH
+          value: /data/weights.sd
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: minitchess-simplealphazero-pvc
+
