@@ -18,7 +18,7 @@ spec:
       containers:
       - name: master
         image: schouhy/minitchess-alphazero:1
-        command: ["python", "-m", "app.master.master"]
+        command: ["python", "-m", "app.master"]
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

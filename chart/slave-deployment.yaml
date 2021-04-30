@@ -18,7 +18,7 @@ spec:
       containers:
       - name: slave
         image: schouhy/minitchess-alphazero:1
-        command: ["python", "-m", "app.slave.slave"]
+        command: ["python", "-m", "app.slave"]
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

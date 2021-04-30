@@ -15,8 +15,8 @@ RUN pip install git+https://git@github.com/schouhy/erlyx.git@$ERLYX_VERSION
 ENV PYTHON_CHESS_VERSION=a4cf4ddda739f50568b0fd78662a3c3185b426c5
 RUN pip install git+https://git@github.com/schouhy/python-chess.git@$PYTHON_CHESS_VERSION
 
-ENV MINITCHESS_ALPHAZERO_VERSION=5f83fc81137713fb26c9032581b054c683269dc3
-RUN pip install git+https://git@github.com/schouhy/minitchess-alphazero.git@$MINITCHESS_ALPHAZERO_VERSION
+# ENV MINITCHESS_ALPHAZERO_VERSION=5f83fc81137713fb26c9032581b054c683269dc3
+# RUN pip install git+https://git@github.com/schouhy/minitchess-alphazero.git@$MINITCHESS_ALPHAZERO_VERSION
 # RUN cd /tmp && \
 # 	git clone https://github.com/schouhy/erlyx.git && \
 # 	cd erlyx && \
@@ -31,7 +31,9 @@ RUN pip install git+https://git@github.com/schouhy/minitchess-alphazero.git@$MIN
 # 	git clone https://github.com/schouhy/minitchess-alphazero.git exp && \
 # 	cp -r exp /app/exp 
 # 
-RUN wget https://raw.githubusercontent.com/schouhy/minitchess-alphazero/main/exp/moves_dict.json
-COPY . /app/app
+# RUN wget https://raw.githubusercontent.com/schouhy/minitchess-alphazero/main/exp/moves_dict.json
+COPY exp /app/exp
+RUN mv exp/moves_dict.json .
+COPY app /app/app
 
-EXPOSE 5000 8000
+EXPOSE 5000
