@@ -26,9 +26,9 @@ logging.warning('test')
 class Slave:
     def __init__(self, userid):
         assert userid is not None
-        env = MinitChessEnvironment()
-        self._policy = SimpleAlphaZeroPolicy(env, num_simulations=25)
-        self._agent = SimpleAlphaZeroAgent(environment=env,
+        self._env = MinitChessEnvironment()
+        self._policy = SimpleAlphaZeroPolicy(self._env, num_simulations=25)
+        self._agent = SimpleAlphaZeroAgent(environment=self._env,
                                            policy=self._policy)
         self._dataset = RemoteDataset(userid=userid, url=PUSH_EPISODE_URL)
 
