@@ -7,8 +7,6 @@ from datetime import datetime
 
 from exp.dataset import SimpleAlphaZeroDataset
 
-import click
-
 import logging
 
 logging.basicConfig(filename='/app/log',
@@ -53,15 +51,16 @@ class Master:
 
 master = Master(update_period=10)
 
-@app.cli.command('turn_on')
+@app.route('/turn_on')
 def turn_on():
-    logging.info('Command turn_on')
+    logging.info('Hit turn_on')
+    logging.info(f'remote_addr: {request.remote_addr}')
     master.turn_on()
 
 
-@app.cli.command('turn_off')
+@app.route('/turn_off')
 def turn_off():
-    logging.info('Command turn_off')
+    logging.info('Hit turn_off')
     master.turn_off()
 
 
