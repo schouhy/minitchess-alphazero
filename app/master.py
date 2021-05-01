@@ -52,13 +52,13 @@ class Master:
         logging.log('this should trigger weight updates')
 
 
-@app.cli.command('turn_on')
+@app.cli.command()
 def turn_on():
     logging.info('Command turn_on')
     master.turn_on()
 
 
-@app.cli.command('turn_off')
+@app.cli.command()
 def turn_off():
     logging.info('Command turn_off')
     master.turn_off()
