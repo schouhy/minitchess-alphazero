@@ -47,7 +47,7 @@ class Slave:
 
     def get_master_status(self):
         response = requests.get(STATUS_URL)
-        if response.status_code == '200':
+        if response.status_code == 200:
             response_json = json.loads(response.content)
             status = bool(response_json['status']) 
             logging.info(f'Master status: {status}')
