@@ -6,7 +6,7 @@ metadata:
   labels:
     app: slave
 spec:
-  replicas: 4
+  replicas: 2
   selector:
     matchLabels:
       app: slave
@@ -29,5 +29,3 @@ spec:
           value: "http://master-flask-service:5000"
         - name: WEIGHTS_PATH
           value: /data/weights.sd
-        - name: USERID
-          value: "debug"
