@@ -4,7 +4,7 @@ import os
 
 import requests
 import torch
-from date import sleep
+from time import sleep
 from erlyx import run_episodes
 
 from exp.agent import SimpleAlphaZeroAgent
