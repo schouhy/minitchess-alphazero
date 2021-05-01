@@ -19,7 +19,7 @@ logging.warning('test')
 class Master:
     def __init__(self, update_period):
         self._info = []
-        self._status = False
+        self._status = True
         self._updatePeriod = update_period
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
 
@@ -39,7 +39,7 @@ class Master:
         self._status = False
 
     def push(self, data):
-        self._info.append((data['id'], str(datetime.now())))
+        self._info.append((data['userid'], str(datetime.now())))
         self._dataset.push(data['episode'])
         if self._info % self._updatePeriod == 0:
             self.updateWeights()

@@ -17,7 +17,7 @@ MASTER_URL = os.getenv('MASTER_URL', None)
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
 PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
 WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', None)
-USERID = os.getenv('USERID', None)
+USERID = os.getenv('USERID', os.getenv('HOSTNAME', None))
 
 logging.basicConfig(filename='log', filemode='a', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logging.warning('test')
