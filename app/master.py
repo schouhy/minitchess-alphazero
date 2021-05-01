@@ -51,14 +51,15 @@ class Master:
     def updateWeights(self):
         logging.log('this should trigger weight updates')
 
+master = Master(update_period=10)
 
-@app.cli.command()
+@app.cli.command('turn_on')
 def turn_on():
     logging.info('Command turn_on')
     master.turn_on()
 
 
-@app.cli.command()
+@app.cli.command('turn_off')
 def turn_off():
     logging.info('Command turn_off')
     master.turn_off()
@@ -85,5 +86,4 @@ def push_episode():
 
 
 if __name__ == '__main__':
-    master = Master(update_period=10)
     app.run(host='0.0.0.0', port='5000')
