@@ -1,9 +1,12 @@
-import os
-from datetime import datetime
-
 from flask import Flask, request
 
 app = Flask(__name__)
+
+import os
+from datetime import datetime
+
+from exp.dataset import SimpleAlphaZeroDataset
+
 
 class Master:
     def __init__(self, update_period):
@@ -38,23 +41,28 @@ class Master:
     def updateWeights(self):
         logging.log('this should trigger weight updates')
 
+
 @app.route('/turn_on')
 def turn_on():
     master.turn_on()
-    return 'OK' 
+    return 'OK'
+
 
 @app.route('/turn_off')
 def turn_off():
     master.turn_off()
     return 'OK'
 
+
 @app.route('/status')
 def get_status():
     return {'status': master.get_status()}
 
+
 @app.route('/info')
 def get_info():
     return master.get_info()
+
 
 @app.route('/push_episode')
 def push_episode():
@@ -62,9 +70,7 @@ def push_episode():
     master.push(data)
     return 'OK'
 
+
 if __name__ == '__main__':
     master = Master(update_period=10)
     app.run(host='0.0.0.0', port='5000')
-
-
-
