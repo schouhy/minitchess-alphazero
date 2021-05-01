@@ -81,7 +81,7 @@ def get_info():
     return {'info': master.get_info(), 'counter': master.get_counter()}
 
 
-@app.route('/push_episode')
+@app.route('/push_episode', methods=['POST']) 
 def push_episode():
     data = request.get_json()
     logging.info('Hit push_episode: {data}')
