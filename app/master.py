@@ -74,7 +74,7 @@ def get_status():
 @app.route('/info')
 def get_info():
     logging.info(f'Hit info: {master.get_info()}')
-    return {'info': master.get_info(), 'counter': self.get_counter()}
+    return {'info': master.get_info(), 'counter': master.get_counter()}
 
 
 @app.route('/push_episode')
