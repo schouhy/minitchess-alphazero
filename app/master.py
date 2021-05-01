@@ -41,9 +41,8 @@ class Master:
     def push(self, data):
         self._info.append((data['userid'], str(datetime.now())))
         self._dataset.push(data['episode'])
-        if self._info % self._updatePeriod == 0:
+        if len(self._info) % self._updatePeriod == 0:
             self.updateWeights()
-            self._count_period = 0
         return 'done'
 
     def updateWeights(self):
