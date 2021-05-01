@@ -54,14 +54,19 @@ master = Master(update_period=10)
 @app.route('/turn_on')
 def turn_on():
     logging.info('Hit turn_on')
-    logging.info(f'remote_addr: {request.remote_addr}')
-    master.turn_on()
+    if request.remote_addr == '127.0.0.1':
+        master.turn_on()
+        return 'OK'
+    return 'invalid remote address'
 
 
 @app.route('/turn_off')
 def turn_off():
     logging.info('Hit turn_off')
-    master.turn_off()
+    if request.remote_addr == '127.0.0.1':
+        master.turn_off()
+        return 'OK'
+    return 'invalid remote address'
 
 
 @app.route('/status')
