@@ -7,8 +7,14 @@ from datetime import datetime
 
 from exp.dataset import SimpleAlphaZeroDataset
 
-logging.basicConfig(filename='/app/log', filemode='a', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+import logging
+
+logging.basicConfig(filename='/app/log',
+                    filemode='a',
+                    format='%(name)s - %(levelname)s - %(message)s',
+                    level=logging.DEBUG)
 logging.warning('test')
+
 
 class Master:
     def __init__(self, update_period):
