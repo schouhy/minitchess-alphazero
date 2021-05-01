@@ -41,7 +41,7 @@ class Slave:
 
     def _load_weights(self):
         try:
-            self._policy.load_state_dict(torch.load(WEIGHTS_PATH))
+            self._policy.model.load_state_dict(torch.load(WEIGHTS_PATH))
         except FileNotFoundError:
             logging.info('Weights file not found. Skipping weight loading')
 
