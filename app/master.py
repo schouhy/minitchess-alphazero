@@ -7,6 +7,8 @@ from datetime import datetime
 
 from exp.dataset import SimpleAlphaZeroDataset
 
+logging.basicConfig(filename='/app/log', filemode='a', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.warning('test')
 
 class Master:
     def __init__(self, update_period):
@@ -44,23 +46,27 @@ class Master:
 
 @app.route('/turn_on')
 def turn_on():
+    logging.info('Hit turn_on')
     master.turn_on()
     return 'OK'
 
 
 @app.route('/turn_off')
 def turn_off():
+    logging.info('Hit turn_off')
     master.turn_off()
     return 'OK'
 
 
 @app.route('/status')
 def get_status():
+    logging.info(f'Hit get_status: {master.get_status()}')
     return {'status': master.get_status()}
 
 
 @app.route('/info')
 def get_info():
+    logging.info(f'Hit info: {master.get_info()}')
     return master.get_info()
 
 

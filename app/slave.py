@@ -19,7 +19,7 @@ PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
 WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', None)
 USERID = os.getenv('USERID', None)
 
-logging.basicConfig(filename='/app/log', filemode='a', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename='log', filemode='a', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logging.warning('test')
 
 
@@ -32,7 +32,7 @@ class Slave:
                                            policy=self._policy)
         self._dataset = RemoteDataset(userid=userid, url=PUSH_EPISODE_URL)
 
-    def run_episode():
+    def run_episode(self):
         logging.debug('call to run_episode')
         self._load_weights()
         callbacks = [InfoRecorder(self._dataset),
