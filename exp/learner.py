@@ -25,7 +25,7 @@ def collate_fn(batch):
 
 class SimpleAlphaZeroLearner(BaseLearner):
     def __init__(self, network, batch_size, learning_rate):
-        self._netowrk = network
+        self._network = network
         self._batch_size = batch_size
         self.optimizer = torch.optim.AdamW(self._network.parameters(),
                                            lr=learning_rate)
