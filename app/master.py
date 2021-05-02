@@ -46,18 +46,21 @@ def only_authenticated(is_admin=True):
 @only_authenticated()
 def simulate(userid=None, key=None):
     master.simulate()
+    return 'OK'
 
 
 @app.route('/off/<userid>/<key>')
 @only_authenticated()
 def turn_off(userid=None, key=None):
     master.off()
+    return 'OK'
 
 
 @app.route('/train/<userid>/<key>')
 @only_authenticated()
 def train(userid=None, key=None):
     master.train()
+    return 'OK'
 
 
 @app.route('/status')
