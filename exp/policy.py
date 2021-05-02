@@ -45,7 +45,7 @@ class ResidualBlock(torch.nn.Module):
 
 
 class Network(torch.nn.Module):
-    def __init__(self, num_actions):
+    def __init__(self, num_actions=NUM_ACTIONS):
         super(Network, self).__init__()
         self.num_actions = num_actions
         layers = []
@@ -79,7 +79,7 @@ class SimpleAlphaZeroPolicy(Policy):
     def __init__(self, environment, num_simulations=200):
         self._num_simulations = num_simulations
         self._environment = environment
-        self._network = Network(num_actions=NUM_ACTIONS)
+        self._network = Network()
 
     @property
     def model(self):

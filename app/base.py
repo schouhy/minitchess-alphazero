@@ -13,6 +13,7 @@ from exp.callbacks import InfoRecorder, MonteCarloInit
 from exp.dataset import RemoteDataset, SimpleAlphaZeroDataset
 from exp.environment import MinitChessEnvironment
 from exp.policy import Network, SimpleAlphaZeroPolicy
+from exp.learner import SimpleAlphaZeroLearner
 
 MASTER_URL = os.getenv('MASTER_URL', 'localhost')
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
@@ -25,6 +26,7 @@ class MasterOfPuppetsStatus(IntEnum):
     SIMULATE = 2
     TRAIN = 3
 
+
 class BasePuppet:
     def get_master_status(self):
         try:
@@ -35,12 +37,12 @@ class BasePuppet:
                 logging.info(f'MasterOfPuppetsStatus: {status}')
                 return status
             logging.info(
-                f'Master of puppets returned status code: {response.status_code}')
+                f'Master of puppets returned status code: {response.status_code}'
+            )
             return False
         except requests.exceptions.ConnectionError:
             logging.info("Master of puppets not responding...")
             return False
-
 
 
 class SimulatePuppet(BasePuppet):
@@ -66,34 +68,51 @@ class SimulatePuppet(BasePuppet):
             logging.info('Weights file not found. Skipping weight loading')
 
 
-class TrainPuppet(BasePuppet):
-    def __init__(self, userid, key):
+class LearnPuppet(BasePuppet):
+    def __init__(self, userid, key, batch_size, learning_rate):
         self._get_url = '/'.join([GET_TRAIN_DATA_URL, userid, key])
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid, key])
+        self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
+        self._network = Network()
+        self._learner = SimpleAlphaZeroLearner(self._network, batch_size, learning_rate)
 
-    def _get_train_data(self):
-        pass
+    def get_train_data(self):
+        try:
+            response = requests.get(GET_TRAIN_DATA_URL)
+            if response.status_code == 200:
+                data = json.loads(response.content)['data']
+                self._dataset.push(data)
+                logging.info('Added {len(data)} new samples')
+            else:
+                logging.info(
+                    f'Master of puppets returned status code {response.status_code}'
+                )
+        except requests.exceptions.ConnectionError:
+            logging.info('Master of puppets not responding..')
 
     def _push_weights(self):
         pass
 
-    def train(self):
-        pass
-        
+    def get_sample_size(self):
+        return len(self._dataset)
+
+    def learn(self):
+        self._learner.update(self._dataset)
+
 
 class MasterOfPuppets:
     def __init__(self, update_period):
         self._info = []
         self._status = MasterOfPuppetsStatus.SIMULATE
         self._updatePeriod = update_period
-        self._dataset = self._init_dataset() 
+        self._data = self._init_dataset()
 
     def _init_dataset(self):
-        return SimpleAlphaZeroDataset(max_length=1_000_000)
+        return deque(maxlen=1_000_000)
 
     def flush_data(self):
-        data = self._dataset.get_memory()
-        self._dataset = self._init_dataset()
+        data = list(self._data)
+        self._data = self._init_dataset()
         return data
 
     def get_counter(self):
@@ -118,7 +137,5 @@ class MasterOfPuppets:
         if self._status == MasterOfPuppetsStatus.SIMULATE:
             self._info.append((userid, str(datetime.now())))
             self._dataset.push(data)
-            if len(self._info) % self._updatePeriod == 0:
-                self._status = MasterOfPuppetsStatus.TRAIN
             return 'done'
         return 'not simulating, skipping...'
