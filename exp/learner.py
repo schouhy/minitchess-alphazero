@@ -27,7 +27,7 @@ class SimpleAlphaZeroLearner(BaseLearner):
     def __init__(self, network, batch_size, learning_rate):
         self._netowrk = network
         self._batch_size = batch_size
-        self.optimizer = torch.optim.AdamW(policy.model.parameters(),
+        self.optimizer = torch.optim.AdamW(self._network.parameters(),
                                            lr=learning_rate)
         self._loss_file = 'learner_losses.txt'
         self._counter = 0
