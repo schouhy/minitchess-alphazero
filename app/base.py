@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime
 from enum import IntEnum
+from collections import deque
 
 import requests
 import torch
@@ -18,6 +19,8 @@ from exp.learner import SimpleAlphaZeroLearner
 MASTER_URL = os.getenv('MASTER_URL', 'localhost')
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
 PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
+GET_TRAIN_DATA_URL = '/'.join([MASTER_URL, 'get_latest_data'])
+PUSH_WEIGHTS_URL = 'None'
 WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', 'weights.pt')
 
 
