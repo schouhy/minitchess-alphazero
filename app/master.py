@@ -31,6 +31,7 @@ def only_authenticated(is_admin=True):
                 return "Invalid user or password", 200
 
         return _inner
+    return decorator
 
 
 # def block_remote_addr(func):
