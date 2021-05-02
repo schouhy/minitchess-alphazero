@@ -67,7 +67,7 @@ def train(userid=None, key=None):
 @app.route('/status')
 def get_status():
     logging.info(f'Hit get_status: {master.get_status()}')
-    return {'status': int(master.get_status())}
+    return {'status': master.get_status()}
 
 
 @app.route('/info')
