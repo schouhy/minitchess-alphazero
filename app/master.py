@@ -3,6 +3,7 @@ from flask import Flask, request
 app = Flask(__name__)
 
 from app.base import MasterOfPuppets
+import os
 
 master = MasterOfPuppets(update_period=10)
 

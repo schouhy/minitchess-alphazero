@@ -27,15 +27,20 @@ class MasterOfPuppetsStatus(Enum):
 
 class BasePuppet:
     def get_master_status(self):
-        response = requests.get(STATUS_URL)
-        if response.status_code == 200:
-            response_json = json.loads(response.content)
-            status = MasterOfPuppetsStatus(int(response_json['status']))
-            logging.info(f'MasterOfPuppetsStatus: {status}')
-            return status
-        logging.info(
-            f'Master of puppets returned status code: {response.status_code}')
-        return False
+        try:
+            response = requests.get(STATUS_URL)
+            if response.status_code == 200:
+                response_json = json.loads(response.content)
+                status = MasterOfPuppetsStatus(int(response_json['status']))
+                logging.info(f'MasterOfPuppetsStatus: {status}')
+                return status
+            logging.info(
+                f'Master of puppets returned status code: {response.status_code}')
+            return False
+        except requets.exceptions.ConnectionError:
+            logging.info("Master of puppets not responding...")
+            return False
+
 
 
 class SimulatePuppet(BasePuppet):
