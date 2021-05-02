@@ -88,7 +88,7 @@ def push_episode(userid=None, key=None):
 @app.route('/get_latest_data/<userid>/<key>')
 @only_authenticated()
 def get_latest_data(userid=None, key=None):
-    logging.log('Hit get_latest_data: userid={userid}')
+    logging.info(f'Hit get_latest_data: userid={userid}')
     logging.debug(f'key={key}')
     return {'data': master.flush_data()}
 
