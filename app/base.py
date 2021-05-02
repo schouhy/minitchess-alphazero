@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from enum import Enum
+from enum import IntEnum
 
 import requests
 import torch
@@ -20,7 +20,7 @@ PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
 WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', 'weights.pt')
 
 
-class MasterOfPuppetsStatus(Enum):
+class MasterOfPuppetsStatus(IntEnum):
     OFF = 1
     SIMULATE = 2
     TRAIN = 3
