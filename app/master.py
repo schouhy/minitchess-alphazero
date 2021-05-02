@@ -19,7 +19,7 @@ WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', 'weights.pt')
 
 
 def check_credentials(userid, key, is_admin):
-    return True
+    return (userid is not None) and (key is not None)
 
 
 def only_authenticated(is_admin=True):
@@ -44,19 +44,19 @@ def only_authenticated(is_admin=True):
 
 @app.route('/simulate/<userid>/<key>')
 @only_authenticated()
-def simulate(userid, key):
+def simulate(userid=None, key=None):
     master.simulate()
 
 
 @app.route('/off/<userid>/<key>')
 @only_authenticated()
-def turn_off(userid, key):
+def turn_off(userid=None, key=None):
     master.off()
 
 
 @app.route('/train/<userid>/<key>')
 @only_authenticated()
-def train(userid, key):
+def train(userid=None, key=None):
     master.train()
 
 
@@ -74,7 +74,7 @@ def get_info():
 
 @app.route('/push_episode/<userid>/<key>', methods=['POST'])
 @only_authenticated(is_admin=False)
-def push_episode(userid, key):
+def push_episode(userid=None, key=None):
     data = request.get_json()
     logging.info(f'Hit push_episode: userid={userid}, data={data}')
     master.push(userid=userid, data=data)
@@ -83,7 +83,7 @@ def push_episode(userid, key):
 
 @app.route('/get_latest_data/<userid>/<key>')
 @only_authenticated()
-def get_latest_data(userid, key):
+def get_latest_data(userid=None, key=None):
     logging.log('Hit get_latest_data: userid={userid}')
     logging.debug(f'key={key}')
     return {'data': master.flush_data()}

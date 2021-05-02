@@ -37,7 +37,7 @@ class BasePuppet:
             logging.info(
                 f'Master of puppets returned status code: {response.status_code}')
             return False
-        except requets.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError:
             logging.info("Master of puppets not responding...")
             return False
 
