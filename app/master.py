@@ -21,11 +21,11 @@ def check_credentials(userid, key, is_admin):
     return True
 
 
-def only_authenticated(userid, key, is_admin=True):
+def only_authenticated(is_admin=True):
     def decorator(func):
         def _inner(userid, key):
             if check_credentials(userid, key, is_admin):
-                return func()
+                return func(userid, key)
             else:
                 return "Invalid user or password", 200
 
@@ -42,20 +42,20 @@ def only_authenticated(userid, key, is_admin=True):
 
 
 @app.route('/simulate/<userid>/<key>')
-@only_authenticated(userid, key)
-def simulate():
+@only_authenticated()
+def simulate(userid, key):
     master.simulate()
 
 
 @app.route('/off/<userid>/<key>')
-@only_authenticated(userid, key)
-def turn_off():
+@only_authenticated()
+def turn_off(userid, key):
     master.off()
 
 
 @app.route('/train/<userid>/<key>')
-@only_authenticated(userid, key)
-def train():
+@only_authenticated()
+def train(userid, key):
     master.train()
 
 
@@ -72,8 +72,8 @@ def get_info():
 
 
 @app.route('/push_episode/<userid>/<key>', methods=['POST'])
-@only_authenticated(userid, key, is_admin=False)
-def push_episode():
+@only_authenticated(is_admin=False)
+def push_episode(userid, key):
     data = request.get_json()
     logging.info(f'Hit push_episode: userid={userid}, data={data}')
     master.push(userid=userid, data=data)
@@ -81,8 +81,10 @@ def push_episode():
 
 
 @app.route('/get_latest_data/<userid>/<key>')
-@only_authenticated(userid, key)
-def get_latest_data():
+@only_authenticated()
+def get_latest_data(userid, key):
+    logging.log('Hit get_latest_data: userid={userid}')
+    logging.debug(f'key={key}')
     return {'data': master.flush_data()}
 
 

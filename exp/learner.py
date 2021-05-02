@@ -24,8 +24,8 @@ def collate_fn(batch):
 
 
 class SimpleAlphaZeroLearner(BaseLearner):
-    def __init__(self, policy, batch_size, learning_rate):
-        self._policy = policy
+    def __init__(self, network, batch_size, learning_rate):
+        self._netowrk = network
         self._batch_size = batch_size
         self.optimizer = torch.optim.AdamW(policy.model.parameters(),
                                            lr=learning_rate)
@@ -37,7 +37,7 @@ class SimpleAlphaZeroLearner(BaseLearner):
                                 batch_size=self._batch_size,
                                 shuffle=True,
                                 collate_fn=collate_fn)
-        model = self._policy.model.train().cuda()
+        model = self._network.train().cuda()
 
         with open(self._loss_file, 'a') as outfile:
             outfile.write('### Training begin ###\n')
