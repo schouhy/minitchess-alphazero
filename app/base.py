@@ -92,7 +92,7 @@ class MasterOfPuppets:
         return SimpleAlphaZeroDataset(max_length=1_000_000)
 
     def flush_data(self):
-        data = self._dataset._memory.copy()
+        data = self._dataset.get_memory()
         self._dataset = self._init_dataset()
         return data
 
