@@ -12,6 +12,8 @@ from exp.dataset import RemoteDataset, SimpleAlphaZeroDataset
 from exp.environment import MinitChessEnvironment
 from exp.policy import SimpleAlphaZeroPolicy
 
+import logging
+
 MASTER_URL = os.getenv('MASTER_URL', 'localhost')
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
 PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
