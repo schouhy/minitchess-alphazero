@@ -29,7 +29,7 @@ def only_authenticated(is_admin=True):
                 return func(userid, key)
             else:
                 return "Invalid user or password", 200
-
+        _inner.__name__ = func.__name__
         return _inner
     return decorator
 
