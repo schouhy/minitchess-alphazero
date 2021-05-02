@@ -16,7 +16,7 @@ logging.basicConfig(filename='/app/log',
 logging.warning('test')
 
 
-class Master:
+class MasterOfPuppets:
     def __init__(self, update_period):
         self._info = []
         self._status = True
@@ -48,7 +48,7 @@ class Master:
     def updateWeights(self):
         logging.log('this should trigger weight updates')
 
-master = Master(update_period=10)
+master = MasterOfPuppets(update_period=10)
 
 @app.route('/turn_on')
 def turn_on():
