@@ -2,10 +2,7 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-import os
-from datetime import datetime
-
-from exp.dataset import SimpleAlphaZeroDataset
+from app.base import MasterOfPuppets
 
 import logging
 
@@ -15,40 +12,6 @@ logging.basicConfig(filename='/app/log',
                     level=logging.DEBUG)
 logging.warning('test')
 
-
-class MasterOfPuppets:
-    def __init__(self, update_period):
-        self._info = []
-        self._status = True
-        self._updatePeriod = update_period
-        self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
-
-    def get_counter(self):
-        return len(self._info)
-
-    def get_status(self):
-        return self._status
-
-    def get_info(self):
-        return self._info
-
-    def turn_on(self):
-        self._status = True
-
-    def turn_off(self):
-        self._status = False
-
-    def push(self, data):
-        self._info.append((data['userid'], str(datetime.now())))
-        self._dataset.push(data['episode'])
-        if len(self._info) % self._updatePeriod == 0:
-            self.updateWeights()
-        return 'done'
-
-    def updateWeights(self):
-        logging.log('this should trigger weight updates')
-
-master = MasterOfPuppets(update_period=10)
 
 @app.route('/turn_on')
 def turn_on():
@@ -80,13 +43,14 @@ def get_info():
     return {'info': master.get_info(), 'counter': master.get_counter()}
 
 
-@app.route('/push_episode', methods=['POST']) 
+@app.route('/push_episode', methods=['POST'])
 def push_episode():
     data = request.get_json()
-    logging.info('Hit push_episode: {data}')
+    logging.info(f'Hit push_episode: {data}')
     master.push(data)
     return 'OK'
 
 
 if __name__ == '__main__':
+    master = MasterOfPuppets(update_period=10)
     app.run(host='0.0.0.0', port='5000')
