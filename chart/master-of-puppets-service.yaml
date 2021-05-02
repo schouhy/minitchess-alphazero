@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: master-flask-service
+  name: master-of-puppets-service
   namespace: chou-pruebas
 spec:
   type: LoadBalancer
   selector:
-    app: master
+    app: master-of-puppets
   ports:
     - protocol: TCP
       port: 5000

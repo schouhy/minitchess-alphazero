@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: slave-deployment
+  name: puppet-deployment
   namespace: chou-pruebas
   labels:
-    app: slave
+    app: puppet
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: slave
+      app: puppet
   template:
     metadata:
       labels:
-        app: slave
+        app: puppet
     spec:
       containers:
-      - name: slave
+      - name: puppet
         image: schouhy/minitchess-alphazero:1
-        command: ["python", "-m", "app.slave"]
+        command: ["python", "-m", "app.puppet"]
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

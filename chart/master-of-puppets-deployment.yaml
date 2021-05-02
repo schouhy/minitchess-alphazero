@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: master-deployment
+  name: master-of-puppets-deployment
   namespace: chou-pruebas
   labels:
-    app: master
+    app: master-of-puppets
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: master
+      app: master-of-puppets
   template:
     metadata:
       labels:
-        app: master
+        app: master-of-puppets
     spec:
       containers:
-      - name: master
+      - name: master-of-puppets
         image: schouhy/minitchess-alphazero:1
         command: ["python", "-m", "app.master"]
         imagePullPolicy: Always
