@@ -1,18 +1,18 @@
 import json
+import logging
 import os
+from datetime import datetime
+from enum import Enum
 
 import requests
 import torch
 from erlyx import run_episodes
 
-from datetime import datetime
 from exp.agent import SimpleAlphaZeroAgent
 from exp.callbacks import InfoRecorder, MonteCarloInit
 from exp.dataset import RemoteDataset, SimpleAlphaZeroDataset
 from exp.environment import MinitChessEnvironment
-from exp.policy import SimpleAlphaZeroPolicy
-
-import logging
+from exp.policy import Network, SimpleAlphaZeroPolicy
 
 MASTER_URL = os.getenv('MASTER_URL', 'localhost')
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
@@ -20,14 +20,32 @@ PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
 WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', 'weights.pt')
 
 
-class Puppet:
-    def __init__(self, userid):
-        assert userid is not None
+class MasterOfPuppetsStatus(Enum):
+    OFF = 1
+    SIMULATE = 2
+    TRAIN = 3
+
+class BasePuppet:
+    def get_master_status(self):
+        response = requests.get(STATUS_URL)
+        if response.status_code == 200:
+            response_json = json.loads(response.content)
+            status = MasterOfPuppetsStatus(int(response_json['status']))
+            logging.info(f'MasterOfPuppetsStatus: {status}')
+            return status
+        logging.info(
+            f'Master of puppets returned status code: {response.status_code}')
+        return False
+
+
+class SimulatePuppet(BasePuppet):
+    def __init__(self, userid, key):
+        url = '/'.join([PUSH_EPISODE_URL, userid, key])
         self._env = MinitChessEnvironment()
         self._policy = SimpleAlphaZeroPolicy(self._env, num_simulations=25)
         self._agent = SimpleAlphaZeroAgent(environment=self._env,
                                            policy=self._policy)
-        self._dataset = RemoteDataset(userid=userid, url=PUSH_EPISODE_URL)
+        self._dataset = RemoteDataset(url=url)
 
     def run_episode(self):
         logging.debug('call to run_episode')
@@ -42,24 +60,36 @@ class Puppet:
         except FileNotFoundError:
             logging.info('Weights file not found. Skipping weight loading')
 
-    def get_master_status(self):
-        response = requests.get(STATUS_URL)
-        if response.status_code == 200:
-            response_json = json.loads(response.content)
-            status = bool(response_json['status'])
-            logging.info(f'Master of puppets status: {status}')
-            return status
-        logging.info(
-            f'Master of puppets returned status code: {response.status_code}')
-        return False
 
+class TrainPuppet(BasePuppet):
+    def __init__(self, userid, key):
+        self._get_url = '/'.join([GET_TRAIN_DATA_URL, userid, key])
+        self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid, key])
+
+    def _get_train_data(self):
+        pass
+
+    def _push_weights(self):
+        pass
+
+    def train(self):
+        pass
+        
 
 class MasterOfPuppets:
     def __init__(self, update_period):
         self._info = []
-        self._status = True
+        self._status = MasterOfPuppetsStatus.SIMULATE
         self._updatePeriod = update_period
-        self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
+        self._dataset = self._init_dataset() 
+
+    def _init_dataset(self):
+        return SimpleAlphaZeroDataset(max_length=1_000_000)
+
+    def flush_data(self):
+        data = self._dataset._memory.copy()
+        self._dataset = self._init_dataset()
+        return data
 
     def get_counter(self):
         return len(self._info)
@@ -70,18 +100,20 @@ class MasterOfPuppets:
     def get_info(self):
         return self._info
 
-    def turn_on(self):
-        self._status = True
+    def simulate(self):
+        self._status = MasterOfPuppetsStatus.SIMULATE
 
-    def turn_off(self):
-        self._status = False
+    def off(self):
+        self._status = MasterOfPuppetsStatus.OFF
 
-    def push(self, data):
-        self._info.append((data['userid'], str(datetime.now())))
-        self._dataset.push(data['episode'])
-        if len(self._info) % self._updatePeriod == 0:
-            self.updateWeights()
-        return 'done'
+    def train(self):
+        self._status = MasterOfPuppetsStatus.TRAIN
 
-    def updateWeights(self):
-        logging.log('this should trigger weight updates')
+    def push(self, userid, data):
+        if self._status == MasterOfPuppetsStatus.SIMULATE:
+            self._info.append((userid, str(datetime.now())))
+            self._dataset.push(data)
+            if len(self._info) % self._updatePeriod == 0:
+                self._status = MasterOfPuppetsStatus.TRAIN
+            return 'done'
+        return 'not simulating, skipping...'

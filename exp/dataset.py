@@ -19,11 +19,9 @@ class SimpleAlphaZeroDataset(Dataset):
 
 
 class RemoteDataset:
-    def __init__(self, userid, url):
-        self._userid = userid
+    def __init__(self, url):
         self._url = url
 
     def push(self, data):
-        data = {'episode': data, 'userid': self._userid}
         requests.post(self._url, json=data)
 
