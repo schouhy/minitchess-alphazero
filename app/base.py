@@ -81,7 +81,7 @@ class LearnPuppet(BasePuppet):
 
     def get_train_data(self):
         try:
-            response = requests.get(GET_TRAIN_DATA_URL)
+            response = requests.get(self._get_url)
             if response.status_code == 200:
                 data = json.loads(response.content)['data']
                 self._dataset.push(data)
