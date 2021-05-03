@@ -139,6 +139,6 @@ class MasterOfPuppets:
     def push(self, userid, data):
         if self._status == MasterOfPuppetsStatus.SIMULATE:
             self._info.append((userid, str(datetime.now())))
-            self._dataset.push(data)
+            self._data.extend(data)
             return 'done'
         return 'not simulating, skipping...'
