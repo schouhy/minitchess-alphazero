@@ -90,7 +90,9 @@ def push_episode(userid=None, key=None):
 def get_latest_data(userid=None, key=None):
     logging.info(f'Hit get_latest_data: userid={userid}')
     logging.debug(f'key={key}')
-    return {'data': master.flush_data()}
+    logging.debug(f'len(data) = {len(master._data)}')
+    return {'data': master.flush_data(), 
+            'counter': master.get_counter()}
 
 
 #

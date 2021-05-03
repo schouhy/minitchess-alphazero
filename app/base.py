@@ -85,7 +85,7 @@ class LearnPuppet(BasePuppet):
             if response.status_code == 200:
                 data = json.loads(response.content)['data']
                 self._dataset.push(data)
-                logging.info('Added {len(data)} new samples')
+                logging.info(f'Added {len(data)} new samples')
             else:
                 logging.info(
                     f'Master of puppets returned status code {response.status_code}'
