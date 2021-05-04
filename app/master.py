@@ -101,7 +101,7 @@ def get_latest_data(userid=None, key=None):
 def get_weights(userid=None, key=None):
     logging.info(f'userid: {userid}')
     try:
-        return send_file(open(WEIGHTS_PATH), 
+        return send_file(open(WEIGHTS_PATH, 'rb'), 
                          attachment_filename='weights.pt', 
                          mimetype='application/octet-stream') 
     except FileNotFoundError:
