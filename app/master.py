@@ -1,9 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, send_file
 
 app = Flask(__name__)
 
-from app.base import MasterOfPuppets
 import os
+
+from app.base import MasterOfPuppets
 
 master = MasterOfPuppets(update_period=10)
 
@@ -15,7 +16,8 @@ logging.basicConfig(filename='/app/log',
                     level=logging.DEBUG)
 logging.warning('test')
 
-WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', 'weights.pt')
+from pathlib import Path
+WEIGHTS_PATH = Path(os.getenv('WEIGHTS_PATH', '.'))/'weights.pt'
 
 
 def check_credentials(userid, key, is_admin):
@@ -89,11 +91,21 @@ def push_episode(userid=None, key=None):
 @only_authenticated()
 def get_latest_data(userid=None, key=None):
     logging.info(f'Hit get_latest_data: userid={userid}')
-    logging.debug(f'key={key}')
     logging.debug(f'len(data) = {len(master._data)}')
     return {'data': master.flush_data(), 
             'counter': master.get_counter()}
 
+
+@app.route('/get_weights/<userid>/<key>')
+@only_authenticated()
+def get_weights(userid=None, key=None):
+    logging.info(f'userid: {userid}')
+    try:
+        return send_file(open(WEIGHTS_PATH), 
+                         attachment_filename='weights.pt', 
+                         mimetype='application/octet-stream') 
+    except FileNotFoundError:
+        return "No weights file found!"
 
 #
 # @app.route('/push_weights/<uuid>', methods=['POST'])
