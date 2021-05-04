@@ -29,7 +29,7 @@ spec:
           name: data
         env:
         - name: WEIGHTS_PATH
-          value: /data/weights.sd
+          value: /data/weights.pt
       volumes:
       - name: data
         persistentVolumeClaim:

@@ -17,7 +17,7 @@ logging.basicConfig(filename='/app/log',
 logging.warning('test')
 
 from pathlib import Path
-WEIGHTS_PATH = Path(os.getenv('WEIGHTS_PATH', '.'))/'weights.pt'
+WEIGHTS_PATH = Path(os.getenv('WEIGHTS_PATH', '.'))
 
 
 def check_credentials(userid, key, is_admin):
