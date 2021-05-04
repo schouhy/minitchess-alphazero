@@ -1,9 +1,9 @@
 import json
 import logging
 import os
+from collections import deque
 from datetime import datetime
 from enum import IntEnum
-from collections import deque
 
 import requests
 import torch
@@ -13,13 +13,14 @@ from exp.agent import SimpleAlphaZeroAgent
 from exp.callbacks import InfoRecorder, MonteCarloInit
 from exp.dataset import RemoteDataset, SimpleAlphaZeroDataset
 from exp.environment import MinitChessEnvironment
-from exp.policy import Network, SimpleAlphaZeroPolicy
 from exp.learner import SimpleAlphaZeroLearner
+from exp.policy import Network, SimpleAlphaZeroPolicy
 
 MASTER_URL = os.getenv('MASTER_URL', 'localhost')
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
 PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
 GET_TRAIN_DATA_URL = '/'.join([MASTER_URL, 'get_latest_data'])
+GET_WEIGHTS_URL = '/'.join([MASTER_URL, 'get_weights'])
 PUSH_WEIGHTS_URL = 'None'
 WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', 'weights.pt')
 
@@ -30,22 +31,36 @@ class MasterOfPuppetsStatus(IntEnum):
     TRAIN = 3
 
 
+def handle_error_code(default_return_value):
+    def decorator(func):
+        def _inner(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except requests.exceptions.ConnectionError:
+                logging.info("Master of puppets not responding...")
+                return default_return_value
+        return _inner
+    return decorator
+
 class BasePuppet:
+    @handle_error_code(MasterOfPuppetsStatus.OFF)
     def get_master_status(self):
-        try:
-            response = requests.get(STATUS_URL)
-            if response.status_code == 200:
-                response_json = json.loads(response.content)
-                status = MasterOfPuppetsStatus(int(response_json['status']))
-                logging.info(f'MasterOfPuppetsStatus: {status}')
-                return status
-            logging.info(
-                f'Master of puppets returned status code: {response.status_code}'
-            )
-            return False
-        except requests.exceptions.ConnectionError:
-            logging.info("Master of puppets not responding...")
-            return False
+        response = requests.get(STATUS_URL)
+        if response.status_code == 200:
+            response_json = json.loads(response.content)
+            status = MasterOfPuppetsStatus(int(response_json['status']))
+            logging.info(f'MasterOfPuppetsStatus: {status}')
+            return status
+        logging.info(
+            f'Master of puppets returned status code: {response.status_code}'
+        )
+        return MasterOfPuppetsStatus.OFF
+
+    @handle_error_code(None)
+    def get_weights(self, url):
+        response = requests.get(url)
+        if response.status_code == 200:
+            return torch.load(response.content)
 
 
 class SimulatePuppet(BasePuppet):
@@ -73,7 +88,8 @@ class SimulatePuppet(BasePuppet):
 
 class LearnPuppet(BasePuppet):
     def __init__(self, userid, key, batch_size, learning_rate):
-        self._get_url = '/'.join([GET_TRAIN_DATA_URL, userid, key])
+        self._get_data_url = '/'.join([GET_TRAIN_DATA_URL, userid, key])
+        self._get_weights_url = '/'.join([GET_WEIGHTS_URL, userid, key])
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid, key])
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
         self._network = Network()
@@ -81,7 +97,7 @@ class LearnPuppet(BasePuppet):
 
     def get_train_data(self):
         try:
-            response = requests.get(self._get_url)
+            response = requests.get(self._get_data_url)
             if response.status_code == 200:
                 data = json.loads(response.content)['data']
                 self._dataset.push(data)
@@ -100,6 +116,10 @@ class LearnPuppet(BasePuppet):
         return len(self._dataset)
 
     def learn(self):
+        state_dict = self.get_weights(self._get_weights_url)
+        if state_dict is not None:
+            self._network.load_state_dict(state_dict)
+            logging.info('loaded weights')
         self._learner.update(self._dataset)
 
 
