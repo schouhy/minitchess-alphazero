@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import io
 from collections import deque
 from datetime import datetime
 from enum import IntEnum
@@ -60,7 +61,7 @@ class BasePuppet:
     def get_weights(self, url):
         response = requests.get(url)
         if response.status_code == 200:
-            return torch.load(response.content)
+            return torch.load(io.BytesIO(response.content))
 
 
 class SimulatePuppet(BasePuppet):
