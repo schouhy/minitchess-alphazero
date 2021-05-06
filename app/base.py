@@ -38,7 +38,7 @@ class RemoteGetter:
 
     def get(self):
         try:
-            response = requests.get(url)
+            response = requests.get(self._url)
             if response.status_code == 200:
                 return response.content
             logging.info('Master of puppets returned status code: {response.status_code}')
@@ -137,7 +137,7 @@ class LearnPuppet:
             logging.info(f'Added {len(data)} new samples')
 
     def learn(self):
-        state_dict = self._remote_weights.get()
+        state_dict = self._remote_weights.state_dict
         if state_dict is None:
             logging.info('state dict is NoneType. Skipping learning')
             return self.Status.ERROR
@@ -160,7 +160,7 @@ class MasterOfPuppets:
     def __init__(self, update_period):
         self._info = []
         self._system_status = MasterOfPuppetsStatus.SIMULATE
-        self._weights_version = None
+        self._weights_version = 'initial_weights'
         self._updatePeriod = update_period
         self._data = self._init_dataset()
 
@@ -185,7 +185,7 @@ class MasterOfPuppets:
         return len(self._info)
 
     def get_status(self):
-        return {'status': self.get_system_status(), 
+        return {'system_status': self.get_system_status(), 
                 'weights_version': self.get_weights_version()}
 
     def get_info(self):

@@ -38,10 +38,10 @@ class MonteCarloTreeSearch:
     def simulate(self, num_simulations, observation):
         for _ in range(num_simulations):
             episode, _ = self._environment.new_episode(fen=observation)
-            mcts.search(episode)
+            self._search(episode)
         return self._data
 
-    def search(self, episode):
+    def _search(self, episode):
         node = episode.get_observation()
         if node not in self['visited']:
             self['visited'].append(node)
@@ -65,7 +65,7 @@ class MonteCarloTreeSearch:
         u = Q + self._cpuct * P * np.sqrt(N.sum()) / (1 + N)
         action = u.argmax()
         episode.step(legal_moves[action], return_status=False)
-        v = self.search(episode)
+        v = self._search(episode)
 
         Q[action] = (N[action] * Q[action] + v) / (N[action] + 1)
         N[action] += 1
