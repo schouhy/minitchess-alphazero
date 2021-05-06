@@ -115,7 +115,7 @@ class LearnPuppet:
         SUCCESS = 1
 
     def __init__(self, userid, key, batch_size, learning_rate):
-        self._status = RemoteStatus(userid, key)
+        self._status = RemoteStatus()
         self._remote_weights = RemoteWeights(userid, key)
 
         get_data_url = '/'.join([GET_TRAIN_DATA_URL, userid, key])
