@@ -76,21 +76,17 @@ class Network(torch.nn.Module):
 
 
 class SimpleAlphaZeroPolicy(Policy):
-    def __init__(self, environment, num_simulations=200):
-        self._num_simulations = num_simulations
-        self._environment = environment
-        self._network = Network()
+    def __init__(self, network=None):
+        self._network = network or Network()
 
     @property
     def model(self):
         return self._network
 
-    def get_distribution(self, observation, mcts):
+    def get_distribution(self, observation, mcts, num_simulations):
         with torch.no_grad():
             self._network.eval().cpu()
-            for _ in range(self._num_simulations):
-                episode, _ = self._environment.new_episode(fen=observation)
-                mcts.search(episode)
+            mcts.simulate(num_simulations, observation)
             legal_moves = mcts['legal_moves'][observation]
             N = mcts['N'][observation]
             dist = N / N.sum()

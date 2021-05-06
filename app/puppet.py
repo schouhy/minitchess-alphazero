@@ -2,7 +2,7 @@ import logging
 import os
 
 from time import sleep
-from app.base import SimulatePuppet, MasterOfPuppetsStatus
+from app.base import SimulatePuppet, MasterOfPuppetsStatus, RemoteStatus
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 KEY = os.getenv('KEY', 'None')
@@ -14,7 +14,8 @@ logging.warning('test')
 
 if __name__ == '__main__':
     puppet = SimulatePuppet(USERID, KEY)
+    remote_status = RemoteStatus()
     while True:
-        while puppet.get_master_status() == MasterOfPuppetsStatus.SIMULATE:
+        while remote_status['system_status'] == MasterOfPuppetsStatus.SIMULATE:
             puppet.run_episode()
         sleep(60 * 5)

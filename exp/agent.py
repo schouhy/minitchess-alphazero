@@ -35,6 +35,12 @@ class MonteCarloTreeSearch:
     def __getitem__(self, item):
         return self._data.get(item, None)
 
+    def simulate(self, num_simulations, observation):
+        for _ in range(num_simulations):
+            episode, _ = self._environment.new_episode(fen=observation)
+            mcts.search(episode)
+        return self._data
+
     def search(self, episode):
         node = episode.get_observation()
         if node not in self['visited']:
@@ -67,9 +73,10 @@ class MonteCarloTreeSearch:
 
 
 class SimpleAlphaZeroAgent(PolicyAgent):
-    def __init__(self, environment, policy, cpuct=1):
+    def __init__(self, environment, policy, num_simulations, cpuct=1):
         super(SimpleAlphaZeroAgent, self).__init__(policy)
         self._environment = environment
+        self._num_simulations = num_simulations
         self._cpuct = cpuct
         self.init_mcts()
 
@@ -78,6 +85,8 @@ class SimpleAlphaZeroAgent(PolicyAgent):
                                           self._cpuct)
 
     def select_action(self, observation):
-        info = self.policy.get_distribution(observation, self._mcts)
+        info = self.policy.get_distribution(observation,
+                                            self._mcts,
+                                            self._num_simulations)
         action = np.random.choice(info['legal_moves'], p=info['pi'])
         return ActionData(action=action, info=info)

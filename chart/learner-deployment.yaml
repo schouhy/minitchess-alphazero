@@ -27,8 +27,6 @@ spec:
         env:
         - name: MASTER_URL
           value: "http://master-of-puppets-service:5000"
-        - name: WEIGHTS_PATH
-          value: /data/weights.sd
         - name: USERID
           value: dalearner
         - name: KEY

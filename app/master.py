@@ -3,7 +3,7 @@ from flask import Flask, request, send_file
 app = Flask(__name__)
 
 import os
-
+import datetime
 from app.base import MasterOfPuppets
 
 master = MasterOfPuppets(update_period=10)
@@ -17,6 +17,7 @@ logging.basicConfig(filename='/app/log',
 logging.warning('test')
 
 from pathlib import Path
+
 WEIGHTS_PATH = Path(os.getenv('WEIGHTS_PATH', '.'))
 
 
@@ -31,8 +32,10 @@ def only_authenticated(is_admin=True):
                 return func(userid, key)
             else:
                 return "Invalid user or password", 200
+
         _inner.__name__ = func.__name__
         return _inner
+
     return decorator
 
 
@@ -69,7 +72,7 @@ def train(userid=None, key=None):
 @app.route('/status')
 def get_status():
     logging.info(f'Hit get_status: {master.get_status()}')
-    return {'status': master.get_status()}
+    return master.get_status()
 
 
 @app.route('/info')
@@ -87,33 +90,37 @@ def push_episode(userid=None, key=None):
     return 'OK'
 
 
+@app.route('/get_weights/<userid>/<key>')
+@only_authenticated(is_admin=False)
+def get_weights(userid=None, key=None):
+    logging.info(f'userid: {userid}')
+    try:
+        version = master.get_weights_version()
+        path = WEIGHTS_PATH/master.get_weights_version()
+        return send_file(open(path, 'rb'),
+                         attachment_filename=version,
+                         mimetype='application/octet-stream')
+    except FileNotFoundError:
+        return "Weights file not found!"
+
+
 @app.route('/get_latest_data/<userid>/<key>')
 @only_authenticated()
 def get_latest_data(userid=None, key=None):
     logging.info(f'Hit get_latest_data: userid={userid}')
     logging.debug(f'len(data) = {len(master._data)}')
-    return {'data': master.flush_data(), 
-            'counter': master.get_counter()}
+    return {'data': master.flush_data(), 'counter': master.get_counter()}
 
 
-@app.route('/get_weights/<userid>/<key>')
+@app.route('/push_weights/<userid>/<key>', methods=['POST'])
 @only_authenticated()
-def get_weights(userid=None, key=None):
-    logging.info(f'userid: {userid}')
-    try:
-        return send_file(open(WEIGHTS_PATH, 'rb'), 
-                         attachment_filename='weights.pt', 
-                         mimetype='application/octet-stream') 
-    except FileNotFoundError:
-        return "No weights file found!"
+def push_weights(userid, key):
+    version = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    with open(WEIGHTS_PATH/version, 'wb') as outfile:
+        outfile.write(request.files['file'])
+        master.set_weights_version(version)
+        master.simulate()
 
-#
-# @app.route('/push_weights/<uuid>', methods=['POST'])
-# def push_weights(uuid):
-#     if check_uuid(uuid):
-#         with open(WEIGHTS_PATH, 'wb') as outfile:
-#             outfile.write(request.files['file'])
-#             master.simulate()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port='5000')
