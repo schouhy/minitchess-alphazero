@@ -2,7 +2,7 @@ import logging
 import os
 
 from time import sleep
-from app.base import LearnPuppet, MasterOfPuppetsStatus
+from app.base import LearnPuppet, MasterOfPuppetsStatus, RemoteStatus
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 KEY = os.getenv('KEY', 'None')
@@ -14,8 +14,9 @@ logging.warning('test')
 
 if __name__ == '__main__':
     learner = LearnPuppet(USERID, KEY, 32, 1e-3)
+    remote_status = RemoteStatus()
     while True:
-        while learner.get_master_status() == MasterOfPuppetsStatus.SIMULATE:
+        while remote_status['system_status'] == MasterOfPuppetsStatus.SIMULATE:
             sleep(15)
             learner.get_train_data()
             logging.info(f'Sample size: {learner.get_sample_size()}')
