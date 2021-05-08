@@ -8,7 +8,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt 
 
-
 ENV ERLYX_VERSION=0f6409c3ff6aea417d89c7e8922db99be7edc606
 RUN pip install git+https://git@github.com/schouhy/erlyx.git@$ERLYX_VERSION
 
@@ -35,5 +34,6 @@ RUN pip install git+https://git@github.com/schouhy/python-chess.git@$PYTHON_CHES
 COPY exp /app/exp
 RUN mv exp/moves_dict.json .
 COPY app /app/app
+RUN pip install jsonpickle
 
 EXPOSE 5000
