@@ -1,4 +1,5 @@
 import json
+import jsonpickle
 import logging
 import os
 import io
@@ -12,7 +13,7 @@ from erlyx import run_episodes
 
 from exp.agent import SimpleAlphaZeroAgent
 from exp.callbacks import InfoRecorder, MonteCarloInit
-from exp.dataset import RemoteDataset, SimpleAlphaZeroDataset
+from exp.dataset import SimpleAlphaZeroDataset
 from exp.environment import MinitChessEnvironment
 from exp.learner import SimpleAlphaZeroLearner
 from exp.policy import Network, SimpleAlphaZeroPolicy
@@ -41,9 +42,12 @@ class RemoteGetter:
             response = requests.get(self._url)
             if response.status_code == 200:
                 return response.content
-            logging.info('Master of puppets returned status code: {response.status_code}')
+            logging.info(
+                'Master of puppets returned status code: {response.status_code}'
+            )
         except requests.exceptions.ConnectionError:
             logging.info("Master of puppets is not responding..")
+
 
 class RemoteStatus:
     def __init__(self):
@@ -57,10 +61,46 @@ class RemoteStatus:
         if attr == 'system_status':
             if data is None:
                 return MasterOfPuppetsStatus.OFF
-            return MasterOfPuppetsStatus(int(data)) 
+            return MasterOfPuppetsStatus(int(data))
+        if attr == 'num_episodes':
+            return int(data)
         return data
 
-class RemoteWeights:
+
+class Weights:
+    @property
+    def state_dict(self):
+        raise NotImplementedError
+
+    @property
+    def version(self):
+        raise NotImplementedError
+
+
+class LocalWeights(Weights):
+    def __init__(self):
+        self._version = self._version_generator()
+        self._state_dict = Network().state_dict()
+
+    @property
+    def state_dict(self):
+        return self._state_dict
+
+    @property
+    def version(self):
+        return self._version
+
+    @staticmethod
+    def _version_generator():
+        return datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+    def update(self, state_dict):
+        self._version = self._version_generator() 
+        self._state_dict = state_dict
+        torch.save(self.state_dict, WEIGHTS_PATH / self.version)
+
+
+class RemoteWeights(Weights):
     def __init__(self, userid, key):
         get_weights_url = '/'.join([GET_WEIGHTS_URL, userid, key])
         self._weights_getter = RemoteGetter(get_weights_url)
@@ -78,6 +118,20 @@ class RemoteWeights:
         return self._status['weights_version']
 
 
+class RemoteDataset:
+    def __init__(self, url):
+        self._url = url
+        self._remote_status = RemoteStatus()
+
+    def push(self, data):
+        status = self._remote_status['system_status']
+        if status == MasterOfPuppetsStatus.SIMULATE:
+            response = requests.post(self._url, json=data)
+            return response.status_code != 200
+        else:
+            logging.info(f'Not pushing episode. Master status is {status}')
+            return True
+
 
 class SimulatePuppet:
     def __init__(self, userid, key):
@@ -91,21 +145,21 @@ class SimulatePuppet:
         self._network = Network()
         policy = SimpleAlphaZeroPolicy(network=self._network)
         self._agent = SimpleAlphaZeroAgent(environment=self._env,
-                                           policy=policy, 
+                                           policy=policy,
                                            num_simulations=25)
 
-    def run_episode(self):
+    def run_episodes(self, num_episodes):
         logging.debug('call to run_episode')
         self._sync_weights()
         callbacks = [InfoRecorder(self._dataset), MonteCarloInit(self._agent)]
-        run_episodes(self._env, self._agent, 1, callbacks=callbacks)
+        run_episodes(self._env, self._agent, num_episodes, callbacks=callbacks)
 
     def _sync_weights(self):
         if self._remote_weights.version == self._local_weights_version:
             return
-        self._local_weights_version = self._remote_weights.version
         new_state_dict = self._remote_weights.state_dict
         if new_state_dict is not None:
+            self._local_weights_version = self._remote_weights.version
             self._network.load_state_dict(new_state_dict)
 
 
@@ -123,11 +177,11 @@ class LearnPuppet:
 
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid, key])
 
+        self._env = MinitChessEnvironment()
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
         self._network = Network()
-        self._learner = SimpleAlphaZeroLearner(self._network, 
-                                               batch_size, 
-                                               learning_rate)
+        self._learner = SimpleAlphaZeroLearner(self._env, self._network,
+                                               batch_size, learning_rate)
 
     def get_train_data(self):
         response = self._data_getter.get()
@@ -136,39 +190,26 @@ class LearnPuppet:
             self._dataset.push(data)
             logging.info(f'Added {len(data)} new samples')
 
-    def learn(self):
-        state_dict = self._remote_weights.state_dict
-        if state_dict is None:
-            logging.info('state dict is NoneType. Skipping learning')
-            return self.Status.ERROR
-        self._network.load_state_dict(state_dict)
-        logging.info('loaded weights. Start learning...')
-        self._learner.update(self._dataset)
-        logging.info('Finished learning')
-        return self.Status.SUCCESS
-
+    def update(self):
+        self._network.load_state_dict(self._remote_weights.state_dict)
+        results = self._learner.update(self._dataset)
+        logging.info('New agent won {results*100}% of games')
+        if results > 0.55:
+            logginf.info('Pushing new weights!')
+            self._push_weights()
 
     def _push_weights(self):
-        pass
-
-    def get_sample_size(self):
-        return len(self._dataset)
-
+        state_dict_json = jsonpickle.encode(self._network.state_dict())
+        response = requests.post(self._push_url, json=state_dict_json)
 
 
 class MasterOfPuppets:
     def __init__(self, update_period):
         self._info = []
         self._system_status = MasterOfPuppetsStatus.SIMULATE
-        self._weights_version = 'initial_weights'
         self._updatePeriod = update_period
         self._data = self._init_dataset()
-
-    def set_weights_version(self, version):
-        self._weights_version = version
-
-    def get_weights_version(self):
-        return self._weights_version
+        self.weights = LocalWeights()
 
     def get_system_status(self):
         return self._system_status
@@ -185,8 +226,11 @@ class MasterOfPuppets:
         return len(self._info)
 
     def get_status(self):
-        return {'system_status': self.get_system_status(), 
-                'weights_version': self.get_weights_version()}
+        return {
+            'system_status': self.get_system_status(),
+            'num_episodes': self.get_counter(),
+            'weights_version': self.weights.version
+        }
 
     def get_info(self):
         return self._info
@@ -202,7 +246,14 @@ class MasterOfPuppets:
 
     def push(self, userid, data):
         if self._system_status == MasterOfPuppetsStatus.SIMULATE:
+            if data['weights_version'] != self.weights.version:
+                logging.info(
+                    f'version missmatch on push data (userid: {userid})')
+                return 'Version missmatch', 400
+            logging.info(
+                f'Pushing {len(data["episode"])} episode samples from userid={userid}'
+            )
             self._info.append((userid, str(datetime.now())))
-            self._data.extend(data)
-            return 'done'
-        return 'not simulating, skipping...'
+            self._data.extend(data['episode'])
+            return 'Success', 200
+        return 'Not simulating', 400

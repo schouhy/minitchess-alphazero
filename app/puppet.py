@@ -17,5 +17,5 @@ if __name__ == '__main__':
     remote_status = RemoteStatus()
     while True:
         while remote_status['system_status'] == MasterOfPuppetsStatus.SIMULATE:
-            puppet.run_episode()
+            puppet.run_episodes(10)
         sleep(60 * 5)

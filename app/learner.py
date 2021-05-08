@@ -19,7 +19,6 @@ if __name__ == '__main__':
         while remote_status['system_status'] == MasterOfPuppetsStatus.SIMULATE:
             sleep(15)
             learner.get_train_data()
-            logging.info(f'Sample size: {learner.get_sample_size()}')
-            if learner.get_sample_size() > 600:
-                learner.learn()
-        sleep(60 * 5)
+        if remote_status['system_status'] == MasterOfPuppetsStatus.TRAIN:
+            learner.update()
+

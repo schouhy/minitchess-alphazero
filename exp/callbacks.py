@@ -2,6 +2,18 @@ from collections import deque
 
 from erlyx.callbacks import BaseCallback
 from exp.dataset import SimpleAlphaZeroDataset
+from exp.agent import RoundRobinReferee
+
+class WinnerRecorder(BaseCallback):
+    def __init__(self, referee: RoundRobinReferee):
+        self._referee = referee
+        self._results = []
+
+    def on_episode_end(self):
+        self._results.append(self._referee.get_turn())
+
+    def get_results(self):
+        return sum(self._results) / len(self._results) 
 
 
 class InfoRecorder(BaseCallback):
@@ -27,7 +39,7 @@ class InfoRecorder(BaseCallback):
         for info in self._episode_record[::-1]:
             info['reward'] = reward
             reward = -reward
-        self._dataset.push(self._episode_record)
+        return self._dataset.push(self._episode_record)
 
 
 class MonteCarloInit(BaseCallback):
