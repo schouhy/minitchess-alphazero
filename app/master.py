@@ -2,13 +2,6 @@ from flask import Flask, request, send_file
 
 app = Flask(__name__)
 
-import os
-import datetime
-import jsonpickle
-from app.base import MasterOfPuppets
-
-master = MasterOfPuppets(update_frequency=3)
-
 import logging
 
 logging.basicConfig(filename='/app/log',
@@ -16,6 +9,14 @@ logging.basicConfig(filename='/app/log',
                     format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.DEBUG)
 logging.warning('test')
+
+import os
+import datetime
+import jsonpickle
+from app.base import MasterOfPuppets
+
+master = MasterOfPuppets(update_frequency=3)
+
 
 from pathlib import Path
 
@@ -75,13 +76,11 @@ def train(userid=None, key=None):
 ### Info
 @app.route('/status')
 def get_status():
-    logging.info(f'Hit get_status: {master.get_status()}')
     return master.get_status()
 
 
 @app.route('/info')
 def get_info():
-    logging.info(f'Hit info')
     return {'info': master.get_info()}
 
 
@@ -97,7 +96,6 @@ def push_episode(userid=None, key=None):
 def report_episode_counter(userid=None, key=None):
     data = request.get_json()
     current_period = int(data['episode_counter']) // master.update_frequency
-    logging.info(f'Hit to report_episode: current_period={current_period}, next_train_period={master.next_train_period}')
     if current_period > master.next_train_period:
         master.next_train_period = current_period
         master.train()
@@ -108,7 +106,6 @@ def report_episode_counter(userid=None, key=None):
 @app.route('/get_latest_data/<userid>/<key>')
 @only_authenticated()
 def get_latest_data(userid=None, key=None):
-    logging.info(f'Hit get_latest_data: userid={userid}')
     logging.debug(f'len(data) = {len(master._data)}')
     return master.flush_data()
 
@@ -116,7 +113,6 @@ def get_latest_data(userid=None, key=None):
 @app.route('/get_weights/<userid>/<key>')
 @only_authenticated(is_admin=False)
 def get_weights(userid=None, key=None):
-    logging.info(f'userid: {userid}')
     try:
         version = master.get_status()['weights_version']
         path = WEIGHTS_PATH/version
@@ -129,9 +125,9 @@ def get_weights(userid=None, key=None):
 @app.route('/push_weights/<userid>/<key>', methods=['POST'])
 @only_authenticated()
 def push_weights(userid, key):
-    state_dict_json = request.get_json()
-    if state_dict_json:
-        master.state_dict = jsonpickle.decode(state_dict_json)
+    state_dict_json = request.get_json()['state_dict']
+    if state_dict_json is not None:
+        master.update_weights(jsonpickle.decode(state_dict_json))
     master.simulate()
     return 'OK', 200
 

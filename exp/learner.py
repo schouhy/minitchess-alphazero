@@ -68,7 +68,7 @@ class SimpleAlphaZeroLearner(BaseLearner):
         winner_recorder = WinnerRecorder(referee)
         with torch.no_grad():
             model.eval()
-            run_episodes(self._env, referee, n_episodes=10, callbacks=[winner_recorder])
+            run_episodes(self._env, referee, n_episodes=2, callbacks=[winner_recorder])
         return winner_recorder.get_results()
 
 

@@ -93,6 +93,7 @@ class LocalWeights(Weights):
     def state_dict(self, new_state_dict):
         self._version = datetime.now().strftime('%Y%m%d%H%M%S')
         self._state_dict = new_state_dict
+        logging.info(f'Updating weights. New weights version: {self.version}')
         torch.save(self.state_dict, WEIGHTS_PATH / self.version)
 
     @property
@@ -205,24 +206,21 @@ class LearnPuppet:
         logging.info(f'Added {len(data)} new samples, episode counter: {self._episode_counter}')
         self._report_episode_counter()
 
-            
-
     def update(self):
         self._network.load_state_dict(self._remote_weights.state_dict)
         results = self._learner.update(self._dataset)
         logging.info(f'New agent won {results*100}% of games')
+        data = {'state_dict': None, 'results': results}
         if results > 0.55:
             logginf.info('Pushing new weights!')
-            self._report_end_training(push_weights=True)
-        else:
-            self._report_end_training(push_weights=False)
-
-    def _report_end_training(self, push_weights):
-        if push_weights:
-            state_dict_json = jsonpickle.encode(self._network.state_dict())
-            response = requests.post(self._push_url, json=state_dict_json)
-        else:
-            response = requests.post(self._push_url, json={})
+            data['state_dict'] = jsonpickle.encode(self._network.state_dict())
+        while True:
+            response = requests.post(self._push_url, json=data)
+            status_code = response.status_code
+            if status_code == 200:
+                break
+            logging.info(f'Cannot report end of training. Master returned status code {status_code}. Retry in 10 seconds...')
+            sleep(10)
 
 
 class MasterOfPuppets:
@@ -240,6 +238,9 @@ class MasterOfPuppets:
     @staticmethod
     def _init_dataset():
         return deque(maxlen=1_000_000), 0 
+
+    def update_weights(self, new_state_dict):
+        self._weights.state_dict = new_state_dict
 
     def flush_data(self):
         data = list(self._data)
@@ -283,7 +284,6 @@ class MasterOfPuppets:
                 f'Pushing episode number {self.get_counter()} with {len(data["episode"])} samples from userid={userid}'
             )
             self._info.append((userid, str(datetime.now())))
-            logging.info(data['episode'])
             self._data.extend(data['episode'])
             self._relative_episode_counter += 1
             return 'Success', 200
