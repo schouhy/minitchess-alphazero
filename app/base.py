@@ -210,7 +210,7 @@ class LearnPuppet:
     def update(self):
         self._network.load_state_dict(self._remote_weights.state_dict)
         results = self._learner.update(self._dataset)
-        logging.info('New agent won {results*100}% of games')
+        logging.info(f'New agent won {results*100}% of games')
         if results > 0.55:
             logginf.info('Pushing new weights!')
             self._report_end_training(push_weights=True)
