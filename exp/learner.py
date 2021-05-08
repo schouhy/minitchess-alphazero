@@ -4,12 +4,13 @@ from torch.utils.data import DataLoader
 from exp.environment import MinitChessEpisode, NUM_ACTIONS
 from exp.dataset import SimpleAlphaZeroDataset
 from exp.agent import RoundRobinReferee, SimpleAlphaZeroAgent
-from exp.callbacks import WinnerRecorder
+from exp.callbacks import WinnerRecorder, MonteCarloInit
 from exp.policy import Network, SimpleAlphaZeroPolicy
 import numpy as np
 import torch
 import copy
 
+ARENA_GAME_NUMBER_PER_SIDE = 5
 
 def collate_fn(batch):
     pis = []
@@ -64,12 +65,20 @@ class SimpleAlphaZeroLearner(BaseLearner):
         
         new_policy = SimpleAlphaZeroPolicy(model)
         new_agent = SimpleAlphaZeroAgent(self._env, new_policy, self._num_simulations)
-        referee = RoundRobinReferee((new_agent, old_agent))
-        winner_recorder = WinnerRecorder(referee)
+        new_agent_wins = 0
         with torch.no_grad():
             model.eval()
-            run_episodes(self._env, referee, n_episodes=2, callbacks=[winner_recorder])
-        return winner_recorder.get_results()
+            # New agent plays white
+            referee = RoundRobinReferee((new_agent, old_agent))
+            winner_recorder = WinnerRecorder(referee)
+            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
+            new_agent_wins += winner_recorder.get_results(0)
+            # New agent plays black
+            referee = RoundRobinReferee((old_agent, new_agent))
+            winner_recorder = WinnerRecorder(referee)
+            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
+            new_agent_wins += winner_recorder.get_results(1)
+        return new_agent_wins/(2*ARENA_GAME_NUMBER_PER_SIDE)
 
 
         

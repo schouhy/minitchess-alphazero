@@ -12,8 +12,12 @@ class WinnerRecorder(BaseCallback):
     def on_episode_end(self):
         self._results.append(self._referee.get_turn())
 
-    def get_results(self):
-        return sum(self._results) / len(self._results) 
+    def get_results(self, side):
+        if side==1:
+            return sum(self._results)
+        elif side==0:
+            return len(self._results) - sum(self._results)
+        raise ValueError(f'side must be 0 or 1, got {side}')
 
 
 class InfoRecorder(BaseCallback):
