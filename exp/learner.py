@@ -34,10 +34,11 @@ class SimpleAlphaZeroLearner(BaseLearner):
         self._num_simulations = num_simulations
         self._network = network
         self._batch_size = batch_size
+        self._learning_rate = learning_rate
 
     def update(self, dataset: SimpleAlphaZeroDataset):
         optimizer = torch.optim.AdamW(self._network.parameters(),
-                                      lr=learning_rate)
+                                      lr=self._learning_rate)
         dataloader = DataLoader(dataset,
                                 batch_size=self._batch_size,
                                 shuffle=True,
@@ -51,22 +52,23 @@ class SimpleAlphaZeroLearner(BaseLearner):
             pb, vb = model(boardb)
             pb = pb.log_softmax(-1)
             loss = ((vb - reward)**2 - (pib * pb).sum(1)).mean()
-            self.optimizer.zero_grad()
+            optimizer.zero_grad()
             loss.backward()
-            self.optimizer.step()
+            optimizer.step()
 
         # Compete against older version
-        old_network = Network().load_state_dict(old_state_dict)
+        old_network = Network()
+        old_network.load_state_dict(old_state_dict)
         old_policy = SimpleAlphaZeroPolicy(old_network)
         old_agent = SimpleAlphaZeroAgent(self._env, old_policy, self._num_simulations)
         
-        new_policy = SimpleAlphaZeroPolicy(network)
+        new_policy = SimpleAlphaZeroPolicy(model)
         new_agent = SimpleAlphaZeroAgent(self._env, new_policy, self._num_simulations)
         referee = RoundRobinReferee((new_agent, old_agent))
         winner_recorder = WinnerRecorder(referee)
         with torch.no_grad():
             model.eval()
-            run_episodes(self._env, referee, n_episodes=10)
+            run_episodes(self._env, referee, n_episodes=10, callbacks=[winner_recorder])
         return winner_recorder.get_results()
 
 

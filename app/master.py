@@ -7,7 +7,7 @@ import datetime
 import jsonpickle
 from app.base import MasterOfPuppets
 
-master = MasterOfPuppets(update_period=10)
+master = MasterOfPuppets(update_frequency=3)
 
 import logging
 
@@ -105,7 +105,7 @@ def get_latest_data(userid=None, key=None):
 def get_weights(userid=None, key=None):
     logging.info(f'userid: {userid}')
     try:
-        version = master.weights.version
+        version = master.get_status()['weights_version']
         path = WEIGHTS_PATH/version
         return send_file(open(path, 'rb'),
                          attachment_filename=version,
@@ -117,7 +117,7 @@ def get_weights(userid=None, key=None):
 @only_authenticated()
 def push_weights(userid, key):
     state_dict_json = request.get_json()
-    master.update_weights(jsonpickle.decode(state_dict_json))
+    master.state_dict = jsonpickle.decode(state_dict_json)
     return 'OK'
 
 

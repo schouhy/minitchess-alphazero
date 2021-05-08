@@ -9,6 +9,7 @@ from enum import IntEnum
 
 import requests
 import torch
+from pathlib import Path
 from erlyx import run_episodes
 
 from exp.agent import SimpleAlphaZeroAgent
@@ -24,8 +25,8 @@ PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
 GET_TRAIN_DATA_URL = '/'.join([MASTER_URL, 'get_latest_data'])
 GET_WEIGHTS_URL = '/'.join([MASTER_URL, 'get_weights'])
 PUSH_WEIGHTS_URL = 'None'
-WEIGHTS_PATH = os.getenv('WEIGHTS_PATH', 'weights.pt')
-
+WEIGHTS_PATH = Path(os.getenv('WEIGHTS_PATH', '.'))
+NUM_SIMULATIONS = 25
 
 class MasterOfPuppetsStatus(IntEnum):
     OFF = 1
@@ -43,7 +44,7 @@ class RemoteGetter:
             if response.status_code == 200:
                 return response.content
             logging.info(
-                'Master of puppets returned status code: {response.status_code}'
+                f'Master of puppets returned status code: {response.status_code}'
             )
         except requests.exceptions.ConnectionError:
             logging.info("Master of puppets is not responding..")
@@ -79,26 +80,23 @@ class Weights:
 
 class LocalWeights(Weights):
     def __init__(self):
-        self._version = self._version_generator()
-        self._state_dict = Network().state_dict()
+        self._version = None
+        self._state_dict = None
+        self.state_dict = Network().state_dict()
 
     @property
     def state_dict(self):
         return self._state_dict
 
+    @state_dict.setter
+    def state_dict(self, new_state_dict):
+        self._version = datetime.now().strftime('%Y%m%d%H%M%S')
+        self._state_dict = new_state_dict
+        torch.save(self.state_dict, WEIGHTS_PATH / self.version)
+
     @property
     def version(self):
         return self._version
-
-    @staticmethod
-    def _version_generator():
-        return datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-
-    def update(self, state_dict):
-        self._version = self._version_generator() 
-        self._state_dict = state_dict
-        torch.save(self.state_dict, WEIGHTS_PATH / self.version)
-
 
 class RemoteWeights(Weights):
     def __init__(self, userid, key):
@@ -119,12 +117,14 @@ class RemoteWeights(Weights):
 
 
 class RemoteDataset:
-    def __init__(self, url):
+    def __init__(self, url, weights_version):
         self._url = url
+        self._weights_version = weights_version
         self._remote_status = RemoteStatus()
 
     def push(self, data):
         status = self._remote_status['system_status']
+        data = {'episode': data, 'weights_version': self._weights_version}
         if status == MasterOfPuppetsStatus.SIMULATE:
             response = requests.post(self._url, json=data)
             return response.status_code != 200
@@ -138,19 +138,19 @@ class SimulatePuppet:
         self._remote_weights = RemoteWeights(userid, key)
         self._local_weights_version = None
 
-        url = '/'.join([PUSH_EPISODE_URL, userid, key])
-        self._dataset = RemoteDataset(url=url)
+        self._push_url = '/'.join([PUSH_EPISODE_URL, userid, key])
 
         self._env = MinitChessEnvironment()
         self._network = Network()
         policy = SimpleAlphaZeroPolicy(network=self._network)
         self._agent = SimpleAlphaZeroAgent(environment=self._env,
                                            policy=policy,
-                                           num_simulations=25)
+                                           num_simulations=NUM_SIMULATIONS)
 
     def run_episodes(self, num_episodes):
         logging.debug('call to run_episode')
         self._sync_weights()
+        self._dataset = RemoteDataset(self._push_url, self._local_weights_version)
         callbacks = [InfoRecorder(self._dataset), MonteCarloInit(self._agent)]
         run_episodes(self._env, self._agent, num_episodes, callbacks=callbacks)
 
@@ -180,7 +180,7 @@ class LearnPuppet:
         self._env = MinitChessEnvironment()
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
         self._network = Network()
-        self._learner = SimpleAlphaZeroLearner(self._env, self._network,
+        self._learner = SimpleAlphaZeroLearner(self._env, NUM_SIMULATIONS, self._network,
                                                batch_size, learning_rate)
 
     def get_train_data(self):
@@ -208,7 +208,7 @@ class MasterOfPuppets:
         self._info = []
         self._system_status = MasterOfPuppetsStatus.SIMULATE
         self._update_frequency = update_frequency
-        self._next_train_period = 1 
+        self._next_train_period = 0
         self._data = self._init_dataset()
         self._weights = LocalWeights()
 
