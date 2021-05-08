@@ -204,12 +204,16 @@ class LearnPuppet:
 
 
 class MasterOfPuppets:
-    def __init__(self, update_period):
+    def __init__(self, update_frequency):
         self._info = []
         self._system_status = MasterOfPuppetsStatus.SIMULATE
-        self._updatePeriod = update_period
+        self._update_frequency = update_frequency
+        self._next_train_period = 1 
         self._data = self._init_dataset()
-        self.weights = LocalWeights()
+        self._weights = LocalWeights()
+
+    def _get_current_period(self):
+        return self.get_counter() // self._update_frequency
 
     def get_system_status(self):
         return self._system_status
@@ -229,31 +233,44 @@ class MasterOfPuppets:
         return {
             'system_status': self.get_system_status(),
             'num_episodes': self.get_counter(),
-            'weights_version': self.weights.version
+            'weights_version': self._weights.version,
+            'next_train_period': self._next_train_period,
+            'current_period': self._get_current_period()
         }
 
     def get_info(self):
         return self._info
 
     def simulate(self):
+        logging.info('Switching to simulate state')
         self._system_status = MasterOfPuppetsStatus.SIMULATE
 
     def off(self):
+        logging.info('Switching to off state')
         self._system_status = MasterOfPuppetsStatus.OFF
 
     def train(self):
+        logging.info('Switching to train state')
         self._system_status = MasterOfPuppetsStatus.TRAIN
 
     def push(self, userid, data):
         if self._system_status == MasterOfPuppetsStatus.SIMULATE:
-            if data['weights_version'] != self.weights.version:
+            if data['weights_version'] != self._weights.version:
                 logging.info(
                     f'version missmatch on push data (userid: {userid})')
                 return 'Version missmatch', 400
             logging.info(
-                f'Pushing {len(data["episode"])} episode samples from userid={userid}'
+                f'Pushing episode number {self.get_counter()} with {len(data["episode"])} samples from userid={userid}'
             )
             self._info.append((userid, str(datetime.now())))
             self._data.extend(data['episode'])
+            if self._get_current_period() > self._next_train_period:
+                self._next_train_period = self._get_current_period()
+                self.train()
             return 'Success', 200
         return 'Not simulating', 400
+
+    def update_weights(self, state_dict):
+        self._weights.update(state_dict)
+        self.simulate()
+

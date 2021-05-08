@@ -117,8 +117,7 @@ def get_weights(userid=None, key=None):
 @only_authenticated()
 def push_weights(userid, key):
     state_dict_json = request.get_json()
-    master.weights.update(jsonpickle.decode(state_dict_json))
-    master.simulate()
+    master.update_weights(jsonpickle.decode(state_dict_json))
     return 'OK'
 
 
