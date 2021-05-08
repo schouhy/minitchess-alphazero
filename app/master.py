@@ -92,12 +92,24 @@ def push_episode(userid=None, key=None):
     data = request.get_json()
     return master.push(userid=userid, data=data)
 
+@app.route('/report_episode_counter/<userid>/<key>', method=['POST'])
+@only_authenticated()
+def report_episode_counter(userid=None, key=None):
+    data = request.get_json()
+    current_period = int(data['episode_counter']) // master.update_frequency
+    logging.info(f'Hit to report_episode: current_period={current_period}, next_train_period={master.next_train_period}')
+    if current_period > master.next_train_period:
+        master.next_train_period = current_period
+        master.train()
+        master.flush_data()
+
+
 @app.route('/get_latest_data/<userid>/<key>')
 @only_authenticated()
 def get_latest_data(userid=None, key=None):
     logging.info(f'Hit get_latest_data: userid={userid}')
     logging.debug(f'len(data) = {len(master._data)}')
-    return {'data': master.flush_data(), 'counter': master.get_counter()}
+    return master.flush_data()
 
 
 @app.route('/get_weights/<userid>/<key>')

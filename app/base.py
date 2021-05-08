@@ -22,6 +22,7 @@ from exp.policy import Network, SimpleAlphaZeroPolicy
 MASTER_URL = os.getenv('MASTER_URL', 'localhost')
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
 PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
+REPORT_EPISODE_COUNTER_URL = '/report_episode_counter'
 GET_TRAIN_DATA_URL = '/'.join([MASTER_URL, 'get_latest_data'])
 GET_WEIGHTS_URL = '/'.join([MASTER_URL, 'get_weights'])
 PUSH_WEIGHTS_URL = 'None'
@@ -168,14 +169,15 @@ class LearnPuppet:
         ERROR = 0
         SUCCESS = 1
 
-    def __init__(self, userid, key, batch_size, learning_rate):
+    def __init__(self, userid, key, batch_size, learning_rate, update_frequency):
         self._status = RemoteStatus()
         self._remote_weights = RemoteWeights(userid, key)
 
         get_data_url = '/'.join([GET_TRAIN_DATA_URL, userid, key])
         self._data_getter = RemoteGetter(get_data_url)
-
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid, key])
+        self._report_episode_counter_url = '/'.JOIN([REPORT_EPISODE_COUNTER_URL, userid, key])
+        self._episode_counter = 0
 
         self._env = MinitChessEnvironment()
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
@@ -183,12 +185,27 @@ class LearnPuppet:
         self._learner = SimpleAlphaZeroLearner(self._env, NUM_SIMULATIONS, self._network,
                                                batch_size, learning_rate)
 
+    def _report_episode_counter(self):
+        response = requests.post(self._report_episode_counter_url, json={'episode_counter': self._episode_counter})
+        if response.status_code == 200:
+            logging.info(f'Reported episode counter {self._episode_counter}')
+        else:
+            logging.info(f'Failed to report episode counter. Master of puppets returned status code {response.status_code}')
+
+
     def get_train_data(self):
         response = self._data_getter.get()
-        if response is not None:
-            data = json.loads(response)['data']
-            self._dataset.push(data)
-            logging.info(f'Added {len(data)} new samples')
+        if response is None:
+            return
+        response_json = json.loads(response)
+        data = response_json['data']
+        relative_episode_counter = int(response_json['relative_episode_counter'])
+        self._dataset.push(data)
+        self._episode_counter += relative_episode_counter
+        logging.info(f'Added {len(data)} new samples, episode counter: {self._episode_counter}')
+        self._report_episode_counter()
+
+            
 
     def update(self):
         self._network.load_state_dict(self._remote_weights.state_dict)
@@ -207,24 +224,23 @@ class MasterOfPuppets:
     def __init__(self, update_frequency):
         self._info = []
         self._system_status = MasterOfPuppetsStatus.SIMULATE
-        self._update_frequency = update_frequency
-        self._next_train_period = 0
-        self._data = self._init_dataset()
+        self._data, self._relative_episode_counter  = self._init_dataset()
+        self.update_frequency = update_frequency
+        self.next_train_period = 0
         self._weights = LocalWeights()
-
-    def _get_current_period(self):
-        return self.get_counter() // self._update_frequency
 
     def get_system_status(self):
         return self._system_status
 
+    @staticmethod
     def _init_dataset(self):
-        return deque(maxlen=1_000_000)
+        return deque(maxlen=1_000_000), 0 
 
     def flush_data(self):
         data = list(self._data)
+        relative_episode_counter = self._relative_episode_counter
         self._data = self._init_dataset()
-        return data
+        return {'data': data, 'relative_episode_counter': relative_episode_counter}
 
     def get_counter(self):
         return len(self._info)
@@ -233,9 +249,8 @@ class MasterOfPuppets:
         return {
             'system_status': self.get_system_status(),
             'num_episodes': self.get_counter(),
+            'relative_episode_counter': self._relative_episode_counter,
             'weights_version': self._weights.version,
-            'next_train_period': self._next_train_period,
-            'current_period': self._get_current_period()
         }
 
     def get_info(self):
@@ -264,9 +279,7 @@ class MasterOfPuppets:
             )
             self._info.append((userid, str(datetime.now())))
             self._data.extend(data['episode'])
-            if self._get_current_period() > self._next_train_period:
-                self._next_train_period = self._get_current_period()
-                self.train()
+            self._relative_episode_counter += 1
             return 'Success', 200
         return 'Not simulating', 400
 

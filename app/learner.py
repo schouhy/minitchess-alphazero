@@ -21,4 +21,4 @@ if __name__ == '__main__':
             learner.get_train_data()
         if remote_status['system_status'] == MasterOfPuppetsStatus.TRAIN:
             learner.update()
-
+        sleep(15)
