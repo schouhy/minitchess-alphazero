@@ -22,10 +22,10 @@ from exp.policy import Network, SimpleAlphaZeroPolicy
 MASTER_URL = os.getenv('MASTER_URL', 'localhost')
 STATUS_URL = '/'.join([MASTER_URL, 'status'])
 PUSH_EPISODE_URL = '/'.join([MASTER_URL, 'push_episode'])
-REPORT_EPISODE_COUNTER_URL = '/report_episode_counter'
+REPORT_EPISODE_COUNTER_URL = '/'.join([MASTER_URL, 'report_episode_counter'])
+PUSH_WEIGHTS_URL = '/'.join([MASTER_URL, 'push_weights'])
 GET_TRAIN_DATA_URL = '/'.join([MASTER_URL, 'get_latest_data'])
 GET_WEIGHTS_URL = '/'.join([MASTER_URL, 'get_weights'])
-PUSH_WEIGHTS_URL = 'None'
 WEIGHTS_PATH = Path(os.getenv('WEIGHTS_PATH', '.'))
 NUM_SIMULATIONS = 25
 
@@ -169,14 +169,14 @@ class LearnPuppet:
         ERROR = 0
         SUCCESS = 1
 
-    def __init__(self, userid, key, batch_size, learning_rate, update_frequency):
+    def __init__(self, userid, key, batch_size, learning_rate):
         self._status = RemoteStatus()
         self._remote_weights = RemoteWeights(userid, key)
 
         get_data_url = '/'.join([GET_TRAIN_DATA_URL, userid, key])
         self._data_getter = RemoteGetter(get_data_url)
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid, key])
-        self._report_episode_counter_url = '/'.JOIN([REPORT_EPISODE_COUNTER_URL, userid, key])
+        self._report_episode_counter_url = '/'.join([REPORT_EPISODE_COUNTER_URL, userid, key])
         self._episode_counter = 0
 
         self._env = MinitChessEnvironment()
@@ -213,11 +213,16 @@ class LearnPuppet:
         logging.info('New agent won {results*100}% of games')
         if results > 0.55:
             logginf.info('Pushing new weights!')
-            self._push_weights()
+            self._report_end_training(push_weights=True)
+        else:
+            self._report_end_training(push_weights=False)
 
-    def _push_weights(self):
-        state_dict_json = jsonpickle.encode(self._network.state_dict())
-        response = requests.post(self._push_url, json=state_dict_json)
+    def _report_end_training(self, push_weights):
+        if push_weights:
+            state_dict_json = jsonpickle.encode(self._network.state_dict())
+            response = requests.post(self._push_url, json=state_dict_json)
+        else:
+            response = requests.post(self._push_url, json={})
 
 
 class MasterOfPuppets:
@@ -233,13 +238,13 @@ class MasterOfPuppets:
         return self._system_status
 
     @staticmethod
-    def _init_dataset(self):
+    def _init_dataset():
         return deque(maxlen=1_000_000), 0 
 
     def flush_data(self):
         data = list(self._data)
         relative_episode_counter = self._relative_episode_counter
-        self._data = self._init_dataset()
+        self._data, self._relative_episode_counter = self._init_dataset()
         return {'data': data, 'relative_episode_counter': relative_episode_counter}
 
     def get_counter(self):
@@ -278,12 +283,9 @@ class MasterOfPuppets:
                 f'Pushing episode number {self.get_counter()} with {len(data["episode"])} samples from userid={userid}'
             )
             self._info.append((userid, str(datetime.now())))
+            logging.info(data['episode'])
             self._data.extend(data['episode'])
             self._relative_episode_counter += 1
             return 'Success', 200
         return 'Not simulating', 400
-
-    def update_weights(self, state_dict):
-        self._weights.update(state_dict)
-        self.simulate()
 

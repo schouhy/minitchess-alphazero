@@ -92,7 +92,7 @@ def push_episode(userid=None, key=None):
     data = request.get_json()
     return master.push(userid=userid, data=data)
 
-@app.route('/report_episode_counter/<userid>/<key>', method=['POST'])
+@app.route('/report_episode_counter/<userid>/<key>', methods=['POST'])
 @only_authenticated()
 def report_episode_counter(userid=None, key=None):
     data = request.get_json()
@@ -102,6 +102,7 @@ def report_episode_counter(userid=None, key=None):
         master.next_train_period = current_period
         master.train()
         master.flush_data()
+    return 'OK', 200
 
 
 @app.route('/get_latest_data/<userid>/<key>')
@@ -129,8 +130,10 @@ def get_weights(userid=None, key=None):
 @only_authenticated()
 def push_weights(userid, key):
     state_dict_json = request.get_json()
-    master.state_dict = jsonpickle.decode(state_dict_json)
-    return 'OK'
+    if state_dict_json:
+        master.state_dict = jsonpickle.decode(state_dict_json)
+    master.simulate()
+    return 'OK', 200
 
 
 if __name__ == '__main__':
