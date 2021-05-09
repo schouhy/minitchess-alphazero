@@ -32,6 +32,7 @@ RUN pip install git+https://git@github.com/schouhy/python-chess.git@$PYTHON_CHES
 # 
 # RUN wget https://raw.githubusercontent.com/schouhy/minitchess-alphazero/main/exp/moves_dict.json
 RUN pip install jsonpickle
+RUN pip install paho-mqtt
 COPY exp /app/exp
 RUN mv exp/moves_dict.json .
 COPY app /app/app
