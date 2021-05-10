@@ -219,7 +219,7 @@ data:
     # listener 0 /tmp/mosquitto.sock
     #
     # listener port-number [ip address/host name/unix socket path]
-    #listener
+    listener 1883 
     
     # By default, a listener will attempt to listen on all supported IP protocol
     # versions. If you do not have an IPv4 or IPv6 interface you may wish to
@@ -336,7 +336,7 @@ data:
     # the client must provide a valid certificate in order for the network
     # connection to proceed. This allows access to the broker to be controlled
     # outside of the mechanisms provided by MQTT.
-    #require_certificate false
+    require_certificate false
     
     # cafile and capath define methods of accessing the PEM encoded
     # Certificate Authority certificates that will be considered trusted when
@@ -353,7 +353,7 @@ data:
     # If require_certificate is true, you may set use_identity_as_username to true
     # to use the CN value from the client certificate as a username. If this is
     # true, the password_file option will not be used for this listener.
-    #use_identity_as_username false
+    use_identity_as_username false
     
     # -----------------------------------------------------------------
     # Pre-shared-key based SSL/TLS support

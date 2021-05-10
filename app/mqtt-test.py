@@ -15,8 +15,8 @@ def on_message(client, userdata, msg):
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-
-client.connect("localhost", 1883, 60)
+client.username_pw_set('eryx', 'Q7QQ5nYJMD8T5zdUdMsyJFb8NmS6XSU3')
+client.connect("pubsub-rl.k8s.eryx.co", 80, 60)
 
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.

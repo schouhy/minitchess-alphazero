@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: mosquitto
+spec:
+        #   tls:
+        #   - hosts:
+        #       - pubsub-rl.k8s.eryx.co
+        #     secretName: pubsub-rl-tls
+  rules:
+  - host: pubsub-rl.k8s.eryx.co
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: mosquitto
+          servicePort: 1883
