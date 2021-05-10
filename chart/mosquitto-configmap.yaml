@@ -353,7 +353,7 @@ data:
     # If require_certificate is true, you may set use_identity_as_username to true
     # to use the CN value from the client certificate as a username. If this is
     # true, the password_file option will not be used for this listener.
-    use_identity_as_username false
+    # use_identity_as_username false
     
     # -----------------------------------------------------------------
     # Pre-shared-key based SSL/TLS support
