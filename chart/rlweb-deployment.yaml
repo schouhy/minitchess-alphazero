@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rlweb
+  namespace: chou-pruebas
+  labels:
+    app: rlweb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rlweb
+  template:
+    metadata:
+      labels:
+        app: rlweb
+    spec:
+      containers:
+      - name: rlweb
+        image: schouhy/minitchess-alphazero:1
+        command: ["python", "-m", "app.web"]
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: flask
+          protocol: TCP
