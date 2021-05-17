@@ -1,37 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: master-of-puppets-deployment
+  name: rlweb
   namespace: chou-pruebas
   labels:
-    app: master-of-puppets
+    app: rlweb
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: master-of-puppets
+      app: rlweb
   template:
     metadata:
       labels:
-        app: master-of-puppets
+        app: rlweb
     spec:
       containers:
-      - name: master-of-puppets
+      - name: rlweb
         image: schouhy/minitchess-alphazero:1
-        command: ["python", "-m", "app.master"]
+        command: ["python", "-m", "app.web"]
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
           name: flask
           protocol: TCP
-        volumeMounts:
-        - mountPath: /data
-          name: data
-        env:
-        - name: WEIGHTS_PATH
-          value: /data/
-      volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: minitchess-simplealphazero-pvc
-
