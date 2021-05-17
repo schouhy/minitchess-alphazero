@@ -21,7 +21,6 @@ from exp.policy import Network, SimpleAlphaZeroPolicy
 
 LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
 PUSH_WEIGHTS_URL = '/'.join([LOGGER_URL, 'push_weights'])
-PUSH_KEY = os.getenv('PUSH_KEY')
 GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights'])
 NUM_SIMULATIONS = 25
 
@@ -114,7 +113,7 @@ class SimulatePuppet:
 
 class LearnPuppet:
     def __init__(self, userid, batch_size, learning_rate):
-        self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid, PUSH_KEY])
+        self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid])
 
         self._env = MinitChessEnvironment()
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
