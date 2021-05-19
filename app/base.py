@@ -21,9 +21,7 @@ from exp.policy import Network, SimpleAlphaZeroPolicy
 
 LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
 PUSH_WEIGHTS_URL = '/'.join([LOGGER_URL, 'push_weights'])
-GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights'])
 NUM_SIMULATIONS = 25
-
 
 class MasterOfPuppetsStatus(IntEnum):
     OFF = 1
@@ -35,17 +33,26 @@ class MQTTDataset:
     def __init__(self, mqtt_client, puppet):
         self._puppet = puppet
         self._mqtt_client = mqtt_client
+        publish_status = mqtt_client.publish(self._puppet._publish_topic, "estoy en el constructor de MQTTDataset")
+        logging.info(f'publish_status: {publish_status.is_published()}')
+
 
     def push(self, data):
-        if puppet.remote_status == MasterOfPuppetsStatus.SIMULATE:
+        logging.info(f"MQTTDataset: {self._puppet.remote_status}")
+        logging.info(f"MQTTDataset: {self._puppet.publish_topic}")
+        if self._puppet.remote_status == MasterOfPuppetsStatus.SIMULATE:
             data = {
                 'episode': data,
-                'userid': puppet.userid,
-                'weights_version': puppet.weights_version
+                'userid': self._puppet.userid,
+                'weights_version': self._puppet.weights_version
             }
+            logging.info("publishing...")
+            self._mqtt_client.publish(self._puppet.publish_topic, "holiiiis") #json.dumps(data))
+            logging.info("done publishing")
+            logging.info(f"{self._mqtt_client}")
         else:
             logging.info(
-                f'Not pushing episode. Master status is {puppet.remote_status}'
+                f'Not pushing episode. Master status is {self._puppet.remote_status}'
             )
             return True
 
@@ -60,7 +67,6 @@ class SimulatePuppet:
                                            num_simulations=NUM_SIMULATIONS)
         self._userid = userid
         self._publish_topic = publish_topic
-        self._mqtt_client = mqtt_client
         self._is_simulating = False
         self._weights_version = None
         self._remote_status = None
@@ -82,8 +88,9 @@ class SimulatePuppet:
         return self._remote_status
 
     @remote_status.setter
-    def set_remote_status(self, status):
+    def remote_status(self, status):
         assert isinstance(status, MasterOfPuppetsStatus)
+        logging.info(f"Puppet: changing status to {status}")
         self._remote_status = status
 
     def run_episodes(self, num_episodes, mqtt_client):
@@ -132,6 +139,10 @@ class LearnPuppet:
         return self._episode_counter
 
     @property
+    def push_url(self):
+        return self._push_url
+
+    @property
     def weights_version(self):
         return self._weights_version
 
@@ -157,6 +168,7 @@ class LearnPuppet:
     def push_data(self):
         self._dataset.push(data)
         self._episode_counter += 1
+        logging.info(f'Episode received: {data}')
 
     def update(self):
         self._network.load_state_dict(self.weights)
@@ -164,7 +176,8 @@ class LearnPuppet:
         logging.info(f'New agent won {result*100}% of games')
         if result > 0.55:
             self.weights = self._network.state_dict().copy()
-            return {
-                'weights': jsonpickle.encode(self.weights),
-                'version': self.weights_version,
-            }
+            return self.get_weights_dict()
+
+    def get_weights_dict(self):
+        return {'weights': jsonpickle.encode(self.weights),
+                'version': self.weights_version}

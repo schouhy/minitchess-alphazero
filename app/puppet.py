@@ -1,10 +1,13 @@
 import logging
+import json
+import jsonpickle
 import os
+import requests
 from time import sleep
 
 import paho.mqtt.client as mqtt
 
-from app.base import MasterOfPuppetsStatus, RemoteStatus, SimulatePuppet
+from app.base import MasterOfPuppetsStatus, SimulatePuppet
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 # MQTT info
@@ -13,6 +16,8 @@ MQTT_USERNAME = os.getenv('MQTT_USERNAME')
 MQTT_PASSWORD = os.getenv('MQTT_PASSWORD')
 LEARNER_TOPIC = os.getenv('LEARNER_TOPIC')
 PUBLISH_EPISODE_TOPIC = os.getenv('PUBLISH_EPISODE_TOPIC')
+LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
+GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights']) 
 
 logging.basicConfig(filename='log',
                     filemode='a',
@@ -23,7 +28,7 @@ logging.warning('test')
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
+    logging.info("Connected with result code " + str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe(LEARNER_TOPIC)
@@ -43,8 +48,8 @@ def on_message(client, userdata, msg):
             content = json.loads(response.content)
             assert content['version'] == msg_payload['weights_version']
             content['weights'] = jsonpickle.decode(content['weights'])
-            puppet.load_remote_weights(**content)
-    puppet.run_episodes(NUM_SIMULATIONS, client)
+            puppet.load_weights(**content)
+    data = puppet.run_episodes(1, client)
 
 puppet = SimulatePuppet(USERID, PUBLISH_EPISODE_TOPIC)
 client = mqtt.Client(userdata={'puppet': puppet})

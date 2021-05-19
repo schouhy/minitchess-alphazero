@@ -7,11 +7,13 @@ logging.basicConfig(filename='log',
 logging.warning('test')
 
 import os
+import json
+import requests
 from time import sleep
 
 import paho.mqtt.client as mqtt
 
-from app.base import LearnPuppet, MasterOfPuppetsStatus, RemoteStatus
+from app.base import LearnPuppet, MasterOfPuppetsStatus
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 
@@ -24,18 +26,21 @@ PUBLISH_EPISODE_TOPIC = os.getenv('PUBLISH_EPISODE_TOPIC')
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
+    logging.info("Connected with result code " + str(rc))
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
+    logging.info(f"Subscribed to {PUBLISH_EPISODE_TOPIC}")
     client.subscribe(PUBLISH_EPISODE_TOPIC)
 
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     assert msg.topic == PUBLISH_EPISODE_TOPIC
-    learner = userdata['learner']
-    learner.push_data(json.loads(msg.payload)['episode'])
+    logging.info(f'received message at topic {msg.topic}')
+    logging.info(msg.payload)
+    # learner = userdata['learner']
+    # learner.push_data(json.loads(msg.payload)['episode'])
 
 
 learner = LearnPuppet(USERID, 32, 1e-4)
@@ -55,38 +60,43 @@ client.connect(MQTT_BROKER_HOST, 1883, 60)
 # manual interface.
 client.loop_start()
 
+def push_data(url, data):
+    # Upload new weights
+    upload_success = False
+    while not upload_success:
+        response = requests.post(url, json=data)
+        status_code = response.status_code
+        if status_code == 200:
+            upload_success = True
+        else:
+            logging.info(
+                f'Cannot report end of training. Master returned status code {status_code}. Retry in 10 seconds...'
+            )
+            sleep(1)
+
 try:
+    push_data(learner.push_url, learner.get_weights_dict())
     while True:
         current_period = learner.episode_counter // episode_frequency
+        logging.info(f'Current period: {current_period}, episode counter: {learner.episode_counter}')
         if last_episode_period < current_period:
             # TRAIN
+            logging.info('TRAINING')
             learner.train()
             last_episode_period = current_period
             client.publish(LEARNER_TOPIC, {'status': learner.status})
             result = learner.update()
             if result:
-                # Upload new weights
-                logging.info('Pushing new weights!')
-                upload_success = False
-                while not upload_success:
-                    response = requests.post(self._push_url, json=result)
-                    status_code = response.status_code
-                    if status_code != 200:
-                        upload_success = True
-                    else:
-                        logging.info(
-                            f'Cannot report end of training. Master returned status code {status_code}. Retry in 10 seconds...'
-                        )
-                        sleep(1)
-
+                push_data(learner.push_url, result)
         # SIMULATE
+        logging.info('SIMULATING')
         learner.simulate()
         data = {
             'status': learner.status,
             'weights_version': learner.weights_version,
             'current_period': current_period
         }
-        client.publish(LEARNER_TOPIC, data)
+        client.publish(LEARNER_TOPIC, json.dumps(data))
         sleep(3)
 finally:
     client.loop_stop()

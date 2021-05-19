@@ -18,7 +18,7 @@ spec:
       containers:
       - name: rlweb
         image: schouhy/minitchess-alphazero:1
-        command: ["python", "-m", "app.web"]
+        command: ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app.web:app"]
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

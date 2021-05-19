@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: rlweb
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redicret: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: 90m
+spec:
+  rules:
+  - host: rlweb.k8s.eryx.co
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: rlweb
+          servicePort: 5000
