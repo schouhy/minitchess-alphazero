@@ -20,11 +20,16 @@ spec:
         image: schouhy/minitchess-alphazero:1
         command: ["python", "-m", "app.puppet"]
         imagePullPolicy: Always
-        ports:
-        - containerPort: 5000
-          name: flask
-          protocol: TCP
         env:
-        - name: MASTER_URL
-          value: "http://master-of-puppets-service:5000"
-
+        - name: MQTT_BROKER_HOST
+          value: pubsub-rl.cloud.shiftr.io
+        - name: LEARNER_TOPIC
+          value: minitchess-alphazero/learner
+        - name: MQTT_USERNAME
+          value: pubsub-rl
+        - name: MQTT_PASSWORD
+          value: FM0QBm3vm3RiPf1d
+        - name: PUBLISH_EPISODE_TOPIC
+          value: minitchess-alphazero/episodes
+        - name: LOGGER_URL
+          value: http://rlweb.k8s.eryx.co

@@ -39,8 +39,9 @@ def on_message(client, userdata, msg):
     assert msg.topic == LEARNER_TOPIC
     puppet = userdata['puppet']
     msg_payload = json.loads(msg.payload)
+    logging.info(msg_payload)
     puppet.remote_status = MasterOfPuppetsStatus[msg_payload['status']]
-    if puppet.is_simulating() or (puppet.remote_status != MasterOfPuppetsStatus.SIMULATE):
+    if puppet.remote_status != MasterOfPuppetsStatus.SIMULATE:
         return
     if puppet.weights_version != msg_payload['weights_version']:
         response = requests.get(GET_WEIGHTS_URL)

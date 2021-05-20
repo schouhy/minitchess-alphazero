@@ -33,23 +33,16 @@ class MQTTDataset:
     def __init__(self, mqtt_client, puppet):
         self._puppet = puppet
         self._mqtt_client = mqtt_client
-        publish_status = mqtt_client.publish(self._puppet._publish_topic, "estoy en el constructor de MQTTDataset")
-        logging.info(f'publish_status: {publish_status.is_published()}')
-
 
     def push(self, data):
-        logging.info(f"MQTTDataset: {self._puppet.remote_status}")
-        logging.info(f"MQTTDataset: {self._puppet.publish_topic}")
         if self._puppet.remote_status == MasterOfPuppetsStatus.SIMULATE:
             data = {
                 'episode': data,
                 'userid': self._puppet.userid,
                 'weights_version': self._puppet.weights_version
             }
-            logging.info("publishing...")
-            self._mqtt_client.publish(self._puppet.publish_topic, "holiiiis") #json.dumps(data))
-            logging.info("done publishing")
-            logging.info(f"{self._mqtt_client}")
+            msginfo = self._mqtt_client.publish(self._puppet.publish_topic, json.dumps(data), qos=2)
+            logging.info(f"published episode: rc={msginfo.rc}, is_published={msginfo.is_published()}, mid={msginfo.mid}")
         else:
             logging.info(
                 f'Not pushing episode. Master status is {self._puppet.remote_status}'
@@ -124,6 +117,7 @@ class LearnPuppet:
 
         self._env = MinitChessEnvironment()
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
+        self._dataset_buffer = []
         self._network = Network()
         self._learner = SimpleAlphaZeroLearner(self._env, NUM_SIMULATIONS,
                                                self._network, batch_size,
@@ -165,10 +159,16 @@ class LearnPuppet:
     def simulate(self):
         self._status = MasterOfPuppetsStatus.SIMULATE
 
-    def push_data(self):
-        self._dataset.push(data)
+    def push_data(self, data):
+        self._dataset_buffer.extend(data)
         self._episode_counter += 1
-        logging.info(f'Episode received: {data}')
+        if MasterOfPuppetsStatus[self.status] == MasterOfPuppetsStatus.SIMULATE:
+            self._dataset.push(data)
+            logging.info(f'Episodes in buffer added to dataset')
+            self._dataset_buffer = []
+        else:
+            logging.info(f'Episode stored in buffer')
+
 
     def update(self):
         self._network.load_state_dict(self.weights)
