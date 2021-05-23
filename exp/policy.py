@@ -5,43 +5,49 @@ import torch
 
 NUM_ACTIONS = 554
 
+class Network(nn.Module):
+    def __init__(self, num_actions=NUM_ACTIONS):
+        # game params
+        self.board_x, self.board_y = 5, 6
+        self.action_size = num_actions
 
-class ConvBlock(torch.nn.Module):
-    def __init__(self,
-                 nin,
-                 nout,
-                 kernel_size,
-                 stride,
-                 padding,
-                 batchnorm=True,
-                 nonlinearity=True):
-        super(ConvBlock, self).__init__()
-        layers = []
-        layers.append(
-            torch.nn.Conv2d(in_channels=nin,
-                            out_channels=nout,
-                            kernel_size=kernel_size,
-                            stride=stride,
-                            padding=padding))
-        layers.append(torch.nn.BatchNorm2d(nout))
-        if nonlinearity:
-            layers.append(torch.nn.ReLU())
-        self.layers = torch.nn.Sequential(*layers)
+        super(Network, self).__init__()
+        self.conv1 = nn.Conv2d(1, 12, 3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(12, 12, 3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(12, 12, 3, stride=1)
+        self.conv4 = nn.Conv2d(12, 12, 3, stride=1)
 
-    def forward(self, x):
-        return self.layers(x)
+        self.bn1 = nn.BatchNorm2d(12)
+        self.bn2 = nn.BatchNorm2d(12)
+        self.bn3 = nn.BatchNorm2d(12)
+        self.bn4 = nn.BatchNorm2d(12)
 
+        self.fc1 = nn.Linear(12*(self.board_x-4)*(self.board_y-4), 1024)
+        self.fc_bn1 = nn.BatchNorm1d(1024)
 
-class ResidualBlock(torch.nn.Module):
-    def __init__(self, nin, nhid, nout):
-        super(ResidualBlock, self).__init__()
-        self.convblock1 = ConvBlock(nin, nhid, 3, 1, 1)
-        self.convblock2 = ConvBlock(nhid, nout, 3, 1, 1, nonlinearity=False)
-        self.nonl = torch.nn.ReLU()
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc_bn2 = nn.BatchNorm1d(512)
 
-    def forward(self, x):
-        x = self.convblock2(self.convblock1(x)) + x
-        return self.nonl(x)
+        self.fc3 = nn.Linear(512, self.action_size)
+
+        self.fc4 = nn.Linear(512, 1)
+
+    def forward(self, s):
+        #                                                           s: batch_size x board_x x board_y
+        s = s.view(-1, 1, self.board_x, self.board_y)                # batch_size x 1 x board_x x board_y
+        s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
+        s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_y
+        s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
+        s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
+        s = s.view(-1, self.12*(self.board_x-4)*(self.board_y-4))
+
+        s = F.dropout(F.relu(self.fc_bn1(self.fc1(s))), p=self.args.dropout, training=self.training)  # batch_size x 1024
+        s = F.dropout(F.relu(self.fc_bn2(self.fc2(s))), p=self.args.dropout, training=self.training)  # batch_size x 512
+
+        pi = self.fc3(s)                                                                         # batch_size x action_size
+        v = self.fc4(s)                                                                          # batch_size x 1
+
+        return pi, torch.tanh(v)
 
 
 class Network(torch.nn.Module):
