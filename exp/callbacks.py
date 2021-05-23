@@ -21,14 +21,10 @@ class WinnerRecorder(BaseCallback):
         assert self._last_reward is not None
         if self._last_reward != 0:
             winner = not self._referee.turn
-            self._results[winner] = self._results.get(not winner, 0) + 1
+            self._results[winner] = self._results.get(winner, 0) + 1
 
     def get_results(self, side):
-        if side==1:
-            return sum(self._results)
-        elif side==0:
-            return len(self._results) - sum(self._results)
-        raise ValueError(f'side must be 0 or 1, got {side}')
+        return self._results[side]
 
 
 class InfoRecorder(BaseCallback):
