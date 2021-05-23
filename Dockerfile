@@ -37,5 +37,7 @@ RUN pip install gunicorn
 COPY exp /app/exp
 RUN mv exp/moves_dict.json .
 COPY app /app/app
+RUN touch log
 
 EXPOSE 5000
+CMD ["python", "-m", "app.puppet"]

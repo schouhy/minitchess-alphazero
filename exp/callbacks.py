@@ -7,10 +7,21 @@ from exp.agent import RoundRobinReferee
 class WinnerRecorder(BaseCallback):
     def __init__(self, referee: RoundRobinReferee):
         self._referee = referee
-        self._results = []
+        self._last_reward = None
+        self._results = {}
+
+    def on_episode_begin(self, initial_observation):
+        self._last_reward = None
+
+    def on_step_end(self, action, observation, reward, done):
+        if done:
+            self._last_reward = reward
 
     def on_episode_end(self):
-        self._results.append(self._referee.get_turn())
+        assert self._last_reward is not None
+        if self._last_reward != 0:
+            winner = not self._referee.turn
+            self._results[winner] = self._results.get(not winner, 0) + 1
 
     def get_results(self, side):
         if side==1:

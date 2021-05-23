@@ -1,4 +1,10 @@
 import logging
+import sys
+logging.StreamHandler(sys.stdout)
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
+                    level=logging.DEBUG)
+logging.warning('test')
+
 import json
 import jsonpickle
 import os
@@ -19,11 +25,6 @@ PUBLISH_EPISODE_TOPIC = os.getenv('PUBLISH_EPISODE_TOPIC')
 LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
 GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights']) 
 
-logging.basicConfig(filename='log',
-                    filemode='a',
-                    format='%(name)s - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
-logging.warning('test')
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -41,16 +42,8 @@ def on_message(client, userdata, msg):
     msg_payload = json.loads(msg.payload)
     logging.info(msg_payload)
     puppet.remote_status = MasterOfPuppetsStatus[msg_payload['status']]
-    if puppet.remote_status != MasterOfPuppetsStatus.SIMULATE:
-        return
-    if puppet.weights_version != msg_payload['weights_version']:
-        response = requests.get(GET_WEIGHTS_URL)
-        if response.status_code == 200:
-            content = json.loads(response.content)
-            assert content['version'] == msg_payload['weights_version']
-            content['weights'] = jsonpickle.decode(content['weights'])
-            puppet.load_weights(**content)
-    data = puppet.run_episodes(1, client)
+    if 'weights_version' in msg_payload:
+        puppet.remote_weights_version = msg_payload['weights_version']
 
 puppet = SimulatePuppet(USERID, PUBLISH_EPISODE_TOPIC)
 client = mqtt.Client(userdata={'puppet': puppet})
@@ -62,4 +55,18 @@ client.connect(MQTT_BROKER_HOST, 1883, 60)
 
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.
-client.loop_forever()
+client.loop_start()
+try:
+    while True:
+        if not puppet.is_simulating() and (puppet.remote_status == MasterOfPuppetsStatus.SIMULATE):
+            if puppet.weights_version != puppet.remote_weights_version:
+                response = requests.get(GET_WEIGHTS_URL)
+                if response.status_code == 200:
+                    content = json.loads(response.content)
+                    assert content['version'] == puppet.remote_weights_version
+                    content['weights'] = jsonpickle.decode(content['weights'])
+                    puppet.load_weights(**content)
+            data = puppet.run_episodes(10, client)
+        sleep(5)
+finally:
+    client.loop_stop()

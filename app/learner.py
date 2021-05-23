@@ -70,7 +70,7 @@ client.connect(MQTT_BROKER_HOST, 1883, 60)
 # manual interface.
 client.loop_start()
 
-def push_data(url, data):
+def push_weights(url, data):
     # Upload new weights
     upload_success = False
     while not upload_success:
@@ -85,7 +85,7 @@ def push_data(url, data):
             sleep(1)
 
 try:
-    push_data(learner.push_url, learner.get_weights_dict())
+    push_weights(learner.push_url, learner.get_weights_dict())
     while True:
         current_period = learner.episode_counter // episode_frequency
         logging.info(f'Current period: {current_period}')
@@ -98,7 +98,7 @@ try:
             result = learner.update()
             if result:
                 logging.info('Uploading new weights')
-                push_data(learner.push_url, result)
+                push_weights(learner.push_url, result)
                 logging.info('Done uploading weights')
             logging.info('DONE TRAINING')
         # SIMULATE

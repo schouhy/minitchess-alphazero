@@ -42,7 +42,7 @@ class MQTTDataset:
                 'weights_version': self._puppet.weights_version
             }
             msginfo = self._mqtt_client.publish(self._puppet.publish_topic, json.dumps(data), qos=2)
-            logging.info(f"published episode: rc={msginfo.rc}, is_published={msginfo.is_published()}, mid={msginfo.mid}")
+            logging.info(f"published episode with mid={msginfo.mid}")
         else:
             logging.info(
                 f'Not pushing episode. Master status is {self._puppet.remote_status}'
@@ -63,6 +63,7 @@ class SimulatePuppet:
         self._is_simulating = False
         self._weights_version = None
         self._remote_status = None
+        self.remote_weights_version = None
 
     @property
     def userid(self):
@@ -83,7 +84,7 @@ class SimulatePuppet:
     @remote_status.setter
     def remote_status(self, status):
         assert isinstance(status, MasterOfPuppetsStatus)
-        logging.info(f"Puppet: changing status to {status}")
+        # logging.info(f"Puppet: changing status to {status}")
         self._remote_status = status
 
     def run_episodes(self, num_episodes, mqtt_client):
@@ -95,7 +96,8 @@ class SimulatePuppet:
             run_episodes(self._env,
                          self._agent,
                          num_episodes,
-                         callbacks=callbacks)
+                         callbacks=callbacks, 
+                         use_tqdm=False)
             logging.info('Done simulating')
         except Exception as e:
             logging.error(f'Exception occurred: {e}')
