@@ -6,14 +6,11 @@ import numpy as np
 class RoundRobinReferee(BaseAgent):
     def __init__(self, agent_tuple):
         self._agent_tuple = tuple(agent_tuple)
-        self._turn = 0
-
-    def get_turn(self):
-        return self._turn
+        self._turn = False
 
     def select_action(self, observation):
-        action = self._agent_tuple[self._turn].select_action(observation)
-        self._turn = (self._turn + 1) % len(self._agent_tuple)
+        action = self._agent_tuple[int(self._turn)].select_action(observation)
+        self._turn = not self._turn
         return action
 
     @property
