@@ -98,7 +98,6 @@ class SimulatePuppet:
                          num_episodes,
                          callbacks=callbacks, 
                          use_tqdm=False)
-            logging.info('Done simulating')
         except Exception as e:
             logging.error(f'Exception occurred: {e}')
         finally:
@@ -114,7 +113,7 @@ class SimulatePuppet:
 
 
 class LearnPuppet:
-    def __init__(self, userid, batch_size, learning_rate):
+    def __init__(self, userid, batch_size, learning_rate, epochs):
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid])
 
         self._env = MinitChessEnvironment()
@@ -123,7 +122,7 @@ class LearnPuppet:
         self._network = Network()
         self._learner = SimpleAlphaZeroLearner(self._env, NUM_SIMULATIONS,
                                                self._network, batch_size,
-                                               learning_rate)
+                                               learning_rate, epochs)
         self._episode_counter = 0
         self._weights_version = None
         self._weights = None
@@ -166,10 +165,7 @@ class LearnPuppet:
         self._episode_counter += 1
         if MasterOfPuppetsStatus[self.status] == MasterOfPuppetsStatus.SIMULATE:
             self._dataset.push(data)
-            logging.info(f'Episodes in buffer added to dataset')
             self._dataset_buffer = []
-        else:
-            logging.info(f'Episode stored in buffer')
 
 
     def update(self):

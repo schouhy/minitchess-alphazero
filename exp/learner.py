@@ -1,3 +1,10 @@
+import logging
+
+logging.basicConfig(filename='log',
+                    filemode='a',
+                    format='%(name)s - %(levelname)s - %(message)s',
+                    level=logging.DEBUG)
+
 from erlyx.learners import BaseLearner
 from erlyx import run_episodes
 from torch.utils.data import DataLoader
@@ -29,13 +36,31 @@ def collate_fn(batch):
          np.vstack(rewards)])
 
 
+class AvgSmoothLoss:
+    def __init__(self, beta=0.98): 
+        self.beta = beta
+        
+    def reset(self):   
+        self.count = 0
+        self.val = 0.
+        return self
+
+    def accumulate(self, new_val):
+        self.count += 1
+        self.val = new_val + self.beta*(self.val - new_val)
+
+    @property
+    def value(self): return self.val/(1-self.beta**self.count)
+
+
 class SimpleAlphaZeroLearner(BaseLearner):
-    def __init__(self, env, num_simulations, network, batch_size, learning_rate):
+    def __init__(self, env, num_simulations, network, batch_size, learning_rate, epochs):
         self._env = env
         self._num_simulations = num_simulations
         self._network = network
         self._batch_size = batch_size
         self._learning_rate = learning_rate
+        self._epochs = epochs
 
     def update(self, dataset: SimpleAlphaZeroDataset):
         optimizer = torch.optim.AdamW(self._network.parameters(),
@@ -46,16 +71,20 @@ class SimpleAlphaZeroLearner(BaseLearner):
                                 collate_fn=collate_fn)
         model = self._network.train().cuda()
         old_state_dict = copy.deepcopy(model.state_dict())
+        metric = AvgSmoothLoss().reset()
 
         # Update params
-        for pib, boardb, reward in iter(dataloader):
-            pib, boardb, reward = pib.cuda(), boardb.cuda(), reward.cuda()
-            pb, vb = model(boardb)
-            pb = pb.log_softmax(-1)
-            loss = ((vb - reward)**2 - (pib * pb).sum(1)).mean()
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        for epoch in range(self._epochs):
+            for pib, boardb, reward in iter(dataloader):
+                pib, boardb, reward = pib.cuda(), boardb.cuda(), reward.cuda()
+                pb, vb = model(boardb)
+                pb = pb.log_softmax(-1)
+                loss = ((vb - reward)**2 - (pib * pb).sum(1)).mean()
+                optimizer.zero_grad()
+                loss.backward()
+                metric.accumulate(loss.detach().data.cpu().numpy().item())
+                optimizer.step()
+            logging.info(f'Epoch {epoch}: {metric.value:.2f}')
 
         # Compete against older version
         old_network = Network()
@@ -72,12 +101,14 @@ class SimpleAlphaZeroLearner(BaseLearner):
             referee = RoundRobinReferee((new_agent, old_agent))
             winner_recorder = WinnerRecorder(referee)
             run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
-            new_agent_wins += winner_recorder.get_results(0)
+            new_agent_wins += winner_recorder.results[False]
+            logging.info(f'New agent playing with white results: {winner_recorder.results}')
             # New agent plays black
             referee = RoundRobinReferee((old_agent, new_agent))
             winner_recorder = WinnerRecorder(referee)
             run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
-            new_agent_wins += winner_recorder.get_results(1)
+            logging.info(f'New agent playing with black results: {winner_recorder.results}')
+            new_agent_wins += winner_recorder.results[True]
         return new_agent_wins/(2*ARENA_GAME_NUMBER_PER_SIDE)
 
 

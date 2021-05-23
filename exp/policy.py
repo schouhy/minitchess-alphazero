@@ -57,7 +57,7 @@ class Network(torch.nn.Module):
         self.linear = torch.nn.Sequential(torch.nn.Linear(256, 256),
                                           torch.nn.ReLU())
         self.p = torch.nn.Linear(256 * 4 * 3, self.num_actions)
-        self.value = torch.nn.Linear(256 * 4 * 3, 1)
+        self.value = torch.nn.Sequential(torch.nn.Linear(256 * 4 * 3, 1), torch.nn.Tanh())
 
     @staticmethod
     def _from_numpy(x):

@@ -1,10 +1,19 @@
-import logging
 
-logging.basicConfig(filename='log',
-                    filemode='a',
-                    format='%(name)s - %(levelname)s - %(message)s',
+import logging
+import sys
+logging.StreamHandler(sys.stdout)
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.DEBUG)
 logging.warning('test')
+
+# import logging
+# 
+# 
+# logging.basicConfig(filename='log',
+#                     filemode='a',
+#                     format='%(name)s - %(levelname)s - %(message)s',
+#                     level=logging.DEBUG)
+# logging.warning('test')
 
 import os
 import json
@@ -41,7 +50,6 @@ def on_message(client, userdata, msg):
     assert msg.topic == PUBLISH_EPISODE_TOPIC
     learner = userdata['learner']
     msg_payload = json.loads(msg.payload)
-    logging.info(f'received a message {msg.topic} from {msg_payload["userid"]}')
     try:
         learner.push_data(msg_payload['episode'])
         counter_users[msg_payload['userid']] = counter_users.get(msg_payload['userid'], 0) + 1
@@ -50,12 +58,14 @@ def on_message(client, userdata, msg):
         logging.info(f'version counter: {counter_versions}')
     except Exception as e:
         logging.info(f'Exception on push_data: {e}')
-    logging.info(f'Episode count: {learner.episode_counter}')
 
 
-learner = LearnPuppet(USERID, 32, 1e-4)
 last_episode_period = 0
 episode_frequency = 100
+batch_size = 64
+learning_rate = 1e-3
+epochs = 10
+learner = LearnPuppet(USERID, batch_size, learning_rate, epochs)
 
 client = mqtt.Client(userdata={'learner': learner})
 client.on_connect = on_connect
@@ -88,7 +98,6 @@ try:
     push_weights(learner.push_url, learner.get_weights_dict())
     while True:
         current_period = learner.episode_counter // episode_frequency
-        logging.info(f'Current period: {current_period}')
         if last_episode_period < current_period:
             # TRAIN
             logging.info('TRAINING')

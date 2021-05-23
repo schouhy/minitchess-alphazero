@@ -8,7 +8,7 @@ class WinnerRecorder(BaseCallback):
     def __init__(self, referee: RoundRobinReferee):
         self._referee = referee
         self._last_reward = None
-        self._results = {}
+        self._results = {False: 0, True: 0}
 
     def on_episode_begin(self, initial_observation):
         self._last_reward = None
@@ -21,10 +21,11 @@ class WinnerRecorder(BaseCallback):
         assert self._last_reward is not None
         if self._last_reward != 0:
             winner = not self._referee.turn
-            self._results[winner] = self._results.get(winner, 0) + 1
+            self._results[winner] = self._results[winner] + 1
 
-    def get_results(self, side):
-        return self._results[side]
+    @property
+    def results(self):
+        return self._results.copy()
 
 
 class InfoRecorder(BaseCallback):
