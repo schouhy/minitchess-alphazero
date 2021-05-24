@@ -24,6 +24,7 @@ LEARNER_TOPIC = os.getenv('LEARNER_TOPIC')
 PUBLISH_EPISODE_TOPIC = os.getenv('PUBLISH_EPISODE_TOPIC')
 LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
 GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights']) 
+MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
 
 
 
@@ -42,6 +43,7 @@ def on_message(client, userdata, msg):
     msg_payload = json.loads(msg.payload)
     logging.info(msg_payload)
     puppet.remote_status = MasterOfPuppetsStatus[msg_payload['status']]
+    puppet.remote_version = msg_payload['minitchess_alphazero_version']
     if 'weights_version' in msg_payload:
         puppet.remote_weights_version = msg_payload['weights_version']
 
@@ -57,7 +59,7 @@ client.connect(MQTT_BROKER_HOST, 1883, 60)
 # handles reconnecting.
 client.loop_start()
 try:
-    while True:
+    while (puppet.remote_version is None) or (puppet.remote_version == MINITCHESS_ALPHAZERO_VERSION):
         if not puppet.is_simulating() and (puppet.remote_status == MasterOfPuppetsStatus.SIMULATE):
             if puppet.weights_version != puppet.remote_weights_version:
                 response = requests.get(GET_WEIGHTS_URL)

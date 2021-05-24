@@ -66,6 +66,7 @@ class SimulatePuppet:
         self._weights_version = None
         self._remote_status = None
         self.remote_weights_version = None
+        self.remote_version = None
 
     @property
     def userid(self):
