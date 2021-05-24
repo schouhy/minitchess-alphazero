@@ -45,7 +45,7 @@ class MinitChessEpisode(Episode):
         # observation (fen)
         board, turn, no_progress_count, total_move_count = self._board.fen().split()
         board = board if self.turn else board[::-1].swapcase()
-        self._observation = ' '.join([board, no_progress_count, total_move_count])
+        self._observation = ' '.join([board, 'w', no_progress_count, total_move_count])
 
         # reward, done
         board_result = self._board.result()
