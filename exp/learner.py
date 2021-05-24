@@ -95,6 +95,7 @@ class SimpleAlphaZeroLearner(BaseLearner):
         new_policy = SimpleAlphaZeroPolicy(model)
         new_agent = SimpleAlphaZeroAgent(self._env, new_policy, self._num_simulations)
         new_agent_wins = 0
+        old_agent_wins = 0
         with torch.no_grad():
             model.eval()
             # New agent plays white
@@ -102,6 +103,7 @@ class SimpleAlphaZeroLearner(BaseLearner):
             winner_recorder = WinnerRecorder(referee)
             run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
             new_agent_wins += winner_recorder.results[False]
+            old_agent_wins += winner_recorder.results[True]
             logging.info(f'New agent playing with white results: {winner_recorder.results}')
             # New agent plays black
             referee = RoundRobinReferee((old_agent, new_agent))
@@ -109,7 +111,8 @@ class SimpleAlphaZeroLearner(BaseLearner):
             run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
             logging.info(f'New agent playing with black results: {winner_recorder.results}')
             new_agent_wins += winner_recorder.results[True]
-        return new_agent_wins/(2*ARENA_GAME_NUMBER_PER_SIDE)
+            old_agent_wins += winner_recorder.results[False]
+        return new_agent_wins/(new_agent_wins + old_agent_wins + 1e-8)
 
 
         
