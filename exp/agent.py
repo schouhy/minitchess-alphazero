@@ -39,10 +39,10 @@ class MonteCarloTreeSearch:
     def simulate(self, num_simulations, observation):
         for _ in range(num_simulations):
             episode, _ = self._environment.new_episode(fen=observation)
-            self._search(episode, add_noise=True)
+            self._search(episode, is_root_node=True)
         return self._data
 
-    def _search(self, episode, add_noise=False):
+    def _search(self, episode, is_root_node=False):
         node = episode.get_observation()
         if node not in self['visited']:
             self['visited'].append(node)
@@ -53,7 +53,7 @@ class MonteCarloTreeSearch:
             self['Q'][node] = np.zeros(len(legal_moves))
             self['N'][node] = np.zeros(len(legal_moves))
             p, v = self._model(episode.get_board_array())
-            if add_noise:
+            if is_root_node:
                 p[0] = p[0]*0.75 + 0.25*Dirichlet(torch.tensor([0.08]*len(legal_moves))).sample()
             self['P'][node] = p[0][legal_moves].softmax(0).data.cpu().numpy()
             self['legal_moves'][node] = legal_moves
