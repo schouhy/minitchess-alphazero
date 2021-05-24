@@ -43,7 +43,8 @@ def on_message(client, userdata, msg):
     msg_payload = json.loads(msg.payload)
     logging.info(msg_payload)
     puppet.remote_status = MasterOfPuppetsStatus[msg_payload['status']]
-    puppet.remote_version = msg_payload['minitchess_alphazero_version']
+    if 'minitchess_alphazero_version' in msg_payload:
+        puppet.remote_version = msg_payload['minitchess_alphazero_version']
     if 'weights_version' in msg_payload:
         puppet.remote_weights_version = msg_payload['weights_version']
 
@@ -51,7 +52,6 @@ puppet = SimulatePuppet(USERID, PUBLISH_EPISODE_TOPIC)
 client = mqtt.Client(userdata={'puppet': puppet})
 client.on_connect = on_connect
 client.on_message = on_message
-
 client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 client.connect(MQTT_BROKER_HOST, 1883, 60)
 

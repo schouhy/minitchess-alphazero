@@ -109,5 +109,5 @@ try:
         client.publish(LEARNER_TOPIC, json.dumps(data), qos=1)
         sleep(3)
 finally:
-    client.publish(LEARNER_TOPIC, json.dumps({'status': MasterOfPuppetsStatus.OFF}), qos=1)
+    client.publish(LEARNER_TOPIC, json.dumps({'status': MasterOfPuppetsStatus.OFF.name}), qos=1)
     client.loop_stop()
