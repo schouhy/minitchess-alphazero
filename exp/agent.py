@@ -1,8 +1,6 @@
 from erlyx.agents import BaseAgent, PolicyAgent
 from erlyx.types import ActionData
 import numpy as np
-import torch
-from torch.distributions import Dirichlet
 
 
 class RoundRobinReferee(BaseAgent):
@@ -54,9 +52,10 @@ class MonteCarloTreeSearch:
             self['Q'][node] = np.zeros(len(legal_moves))
             self['N'][node] = np.zeros(len(legal_moves))
             p, v = self._model(episode.get_board_array())
+            p = p[0][legal_moves].softmax(0).data.cpu().numpy()
             if is_root_node:
-                p[0] = p[0]*0.75 + 0.25*Dirichlet(torch.FloatTensor([0.08]*len(legal_moves))).sample()
-            self['P'][node] = p[0][legal_moves].softmax(0).data.cpu().numpy()
+                p = p*0.75 + 0.25*np.random.dirichlet([0.08]*len(legal_moves))
+            self['P'][node] = p 
             self['legal_moves'][node] = legal_moves
             return -v[0]
 
@@ -65,6 +64,8 @@ class MonteCarloTreeSearch:
 
         Q, N, P = self['Q'][node], self['N'][node], self['P'][node]
         legal_moves = self['legal_moves'][node]
+        if is_root_node:
+            P = P*0.75 + 0.25*np.random.dirichlet([0.08]*len(legal_moves))
 
         u = Q + self._cpuct * P * np.sqrt(N.sum()) / (1 + N)
         action = u.argmax()
