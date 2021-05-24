@@ -1,6 +1,7 @@
 from erlyx.agents import BaseAgent, PolicyAgent
 from erlyx.types import ActionData
 import numpy as np
+import torch
 from torch.distributions import Dirichlet
 
 
@@ -54,7 +55,7 @@ class MonteCarloTreeSearch:
             self['N'][node] = np.zeros(len(legal_moves))
             p, v = self._model(episode.get_board_array())
             if is_root_node:
-                p[0] = p[0]*0.75 + 0.25*Dirichlet(torch.tensor([0.08]*len(legal_moves))).sample()
+                p[0] = p[0]*0.75 + 0.25*Dirichlet(torch.FloatTensor([0.08]*len(legal_moves))).sample()
             self['P'][node] = p[0][legal_moves].softmax(0).data.cpu().numpy()
             self['legal_moves'][node] = legal_moves
             return -v[0]
