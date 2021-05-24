@@ -26,9 +26,11 @@ class Network(nn.Module):
 
         self.fc1 = nn.Linear(512*(self.board_x-4)*(self.board_y-4), 1024)
         self.fc_bn1 = nn.BatchNorm1d(1024)
+        self.drop1 = nn.Dropout(0.3)
 
         self.fc2 = nn.Linear(1024, 512)
         self.fc_bn2 = nn.BatchNorm1d(512)
+        self.drop2 = nn.Dropout(0.3)
 
         self.fc3 = nn.Linear(512, self.action_size)
 
@@ -48,8 +50,8 @@ class Network(nn.Module):
         s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
         s = s.view(-1, 512*(self.board_x-4)*(self.board_y-4))
 
-        s = F.dropout(F.relu(self.fc_bn1(self.fc1(s))), p=0.3, training=self.training)  # batch_size x 1024
-        s = F.dropout(F.relu(self.fc_bn2(self.fc2(s))), p=0.3, training=self.training)  # batch_size x 512
+        s = self.drop1(F.relu(self.fc_bn1(self.fc1(s))))  # batch_size x 1024
+        s = self.drop2(F.relu(self.fc_bn2(self.fc2(s))))  # batch_size x 512
 
         pi = self.fc3(s)                                                                         # batch_size x action_size
         v = self.fc4(s)                                                                          # batch_size x 1

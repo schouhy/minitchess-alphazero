@@ -1,19 +1,9 @@
-
 import logging
 import sys
 logging.StreamHandler(sys.stdout)
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.DEBUG)
 logging.warning('test')
-
-# import logging
-# 
-# 
-# logging.basicConfig(filename='log',
-#                     filemode='a',
-#                     format='%(name)s - %(levelname)s - %(message)s',
-#                     level=logging.DEBUG)
-# logging.warning('test')
 
 import os
 import json
@@ -31,6 +21,8 @@ MQTT_USERNAME = os.getenv('MQTT_USERNAME')
 MQTT_PASSWORD = os.getenv('MQTT_PASSWORD')
 LEARNER_TOPIC = os.getenv('LEARNER_TOPIC')
 PUBLISH_EPISODE_TOPIC = os.getenv('PUBLISH_EPISODE_TOPIC')
+MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
+logging.info(f'minitchess-alphazero version: {MINITCHESS_ALPHAZERO_VERSION}')
 
 counter_users = {}
 counter_versions = {}
@@ -50,6 +42,9 @@ def on_message(client, userdata, msg):
     assert msg.topic == PUBLISH_EPISODE_TOPIC
     learner = userdata['learner']
     msg_payload = json.loads(msg.payload)
+    if msg_payload.get('minitchess_alphazero_version', None) != MINITCHESS_ALPHAZERO_VERSION:
+        logging.warning(f'Received message from {msg_payload["userid"]} with wrong minitchess-alphazero version')
+        return
     try:
         learner.push_data(msg_payload['episode'])
         counter_users[msg_payload['userid']] = counter_users.get(msg_payload['userid'], 0) + 1
@@ -70,14 +65,8 @@ learner = LearnPuppet(USERID, batch_size, learning_rate, epochs)
 client = mqtt.Client(userdata={'learner': learner})
 client.on_connect = on_connect
 client.on_message = on_message
-
 client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 client.connect(MQTT_BROKER_HOST, 1883, 60)
-
-# Blocking call that processes network traffic, dispatches callbacks and
-# handles reconnecting.
-# Other loop*() functions are available that give a threaded interface and a
-# manual interface.
 client.loop_start()
 
 def push_weights(url, data):
@@ -120,4 +109,5 @@ try:
         client.publish(LEARNER_TOPIC, json.dumps(data), qos=1)
         sleep(3)
 finally:
+    client.publish(LEARNER_TOPIC, json.dumps({'status': MasterOfPuppetsStatus.OFF}), qos=1)
     client.loop_stop()

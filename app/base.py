@@ -22,6 +22,7 @@ from exp.policy import Network, SimpleAlphaZeroPolicy
 LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
 PUSH_WEIGHTS_URL = '/'.join([LOGGER_URL, 'push_weights'])
 NUM_SIMULATIONS = 25
+MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
 
 class MasterOfPuppetsStatus(IntEnum):
     OFF = 1
@@ -39,7 +40,8 @@ class MQTTDataset:
             data = {
                 'episode': data,
                 'userid': self._puppet.userid,
-                'weights_version': self._puppet.weights_version
+                'weights_version': self._puppet.weights_version,
+                'minitchess_alphazero_version': MINITCHESS_ALPHAZERO_VERSION
             }
             msginfo = self._mqtt_client.publish(self._puppet.publish_topic, json.dumps(data), qos=2)
             logging.info(f"published episode with mid={msginfo.mid}")

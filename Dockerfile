@@ -38,6 +38,8 @@ COPY exp /app/exp
 RUN mv exp/moves_dict.json .
 COPY app /app/app
 RUN touch log
+ARG MINITCHESS_ALPHAZERO_VERSION=0
+ENV MINITCHESS_ALPHAZERO_VERSION = $MINITCHESS_ALPHAZERO_VERSION
 
 EXPOSE 5000
 CMD ["python", "-m", "app.puppet"]
