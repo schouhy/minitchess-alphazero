@@ -59,7 +59,7 @@ class MonteCarloTreeSearch:
             return -v[0]
 
         if node in self['terminal'].keys():
-            return self['termina'][node]
+            return self['terminal'][node]
 
         Q, N, P = self['Q'][node], self['N'][node], self['P'][node]
         legal_moves = self['legal_moves'][node]
