@@ -45,9 +45,8 @@ class MonteCarloTreeSearch:
         node = episode.get_observation()
         if node not in self['visited']:
             self['visited'].append(node)
-            self['terminal'][node] = episode.is_done()
-            if self['terminal'][node]:
-                return -1
+            if episode.is_done(): 
+                self['terminal'][node]= -episode.get_reward()
             legal_moves = episode.get_legal_moves()
             self['Q'][node] = np.zeros(len(legal_moves))
             self['N'][node] = np.zeros(len(legal_moves))
@@ -59,8 +58,8 @@ class MonteCarloTreeSearch:
             self['legal_moves'][node] = legal_moves
             return -v[0]
 
-        if self['terminal'][node]:
-            return -1
+        if node in self['terminal'].keys():
+            return self['termina'][node]
 
         Q, N, P = self['Q'][node], self['N'][node], self['P'][node]
         legal_moves = self['legal_moves'][node]

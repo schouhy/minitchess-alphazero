@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 NUM_ACTIONS = 554
-
+NUM_CHANNELS_BOARD_ARRAY = 14
 
 class ConvBlock(torch.nn.Module):
     def __init__(self,
@@ -49,7 +49,7 @@ class Network(torch.nn.Module):
         super(Network, self).__init__()
         self.num_actions = num_actions
         layers = []
-        layers.append(ConvBlock(12, 256, 3, 1, 1))
+        layers.append(ConvBlock(NUM_CHANNELS_BOARD_ARRAY, 256, 3, 1, 1))
         for _ in range(3):
             layers.append(ResidualBlock(256, 256, 256))
         layers.append(ConvBlock(256, 256, 3, 1, 0))
