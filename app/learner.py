@@ -104,7 +104,8 @@ try:
         data = {
             'status': learner.status,
             'weights_version': learner.weights_version,
-            'current_period': current_period
+            'current_period': current_period,
+            'minitchess_alphazero_version': MINITCHESS_ALPHAZERO_VERSION
         }
         client.publish(LEARNER_TOPIC, json.dumps(data), qos=1)
         sleep(3)
