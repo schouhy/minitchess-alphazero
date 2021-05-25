@@ -2,77 +2,65 @@ from erlyx.policies import Policy
 import chess
 import numpy as np
 import torch
+from torch import nn
+import torch.nn.functional as F
 
 NUM_ACTIONS = 554
-NUM_CHANNELS_BOARD_ARRAY = 14
 
-class ConvBlock(torch.nn.Module):
-    def __init__(self,
-                 nin,
-                 nout,
-                 kernel_size,
-                 stride,
-                 padding,
-                 batchnorm=True,
-                 nonlinearity=True):
-        super(ConvBlock, self).__init__()
-        layers = []
-        layers.append(
-            torch.nn.Conv2d(in_channels=nin,
-                            out_channels=nout,
-                            kernel_size=kernel_size,
-                            stride=stride,
-                            padding=padding))
-        layers.append(torch.nn.BatchNorm2d(nout))
-        if nonlinearity:
-            layers.append(torch.nn.ReLU())
-        self.layers = torch.nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.layers(x)
-
-
-class ResidualBlock(torch.nn.Module):
-    def __init__(self, nin, nhid, nout):
-        super(ResidualBlock, self).__init__()
-        self.convblock1 = ConvBlock(nin, nhid, 3, 1, 1)
-        self.convblock2 = ConvBlock(nhid, nout, 3, 1, 1, nonlinearity=False)
-        self.nonl = torch.nn.ReLU()
-
-    def forward(self, x):
-        x = self.convblock2(self.convblock1(x)) + x
-        return self.nonl(x)
-
-
-class Network(torch.nn.Module):
+class Network(nn.Module):
     def __init__(self, num_actions=NUM_ACTIONS):
+        # game params
+        self.board_x, self.board_y = 5, 6
+        self.action_size = num_actions
+
         super(Network, self).__init__()
-        self.num_actions = num_actions
-        layers = []
-        layers.append(ConvBlock(NUM_CHANNELS_BOARD_ARRAY, 256, 3, 1, 1))
-        for _ in range(3):
-            layers.append(ResidualBlock(256, 256, 256))
-        layers.append(ConvBlock(256, 256, 3, 1, 0))
-        self.convblock = torch.nn.Sequential(*layers)
-        self.linear = torch.nn.Sequential(torch.nn.Linear(256, 256),
-                                          torch.nn.ReLU())
-        self.p = torch.nn.Linear(256 * 4 * 3, self.num_actions)
-        self.value = torch.nn.Sequential(torch.nn.Linear(256 * 4 * 3, 1), torch.nn.Tanh())
+        self.conv1 = nn.Conv2d(14, 512, 3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(512, 512, 3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(512, 512, 3, stride=1)
+        self.conv4 = nn.Conv2d(512, 512, 3, stride=1)
+
+        self.bn1 = nn.BatchNorm2d(512)
+        self.bn2 = nn.BatchNorm2d(512)
+        self.bn3 = nn.BatchNorm2d(512)
+        self.bn4 = nn.BatchNorm2d(512)
+
+        self.fc1 = nn.Linear(512*(self.board_x-4)*(self.board_y-4), 1024)
+        self.fc_bn1 = nn.BatchNorm1d(1024)
+
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc_bn2 = nn.BatchNorm1d(512)
+
+        self.fc3 = nn.Linear(512, self.action_size)
+
+        self.fc4 = nn.Linear(512, 1)
 
     @staticmethod
     def _from_numpy(x):
         return torch.FloatTensor(x)[None]
 
-    def forward(self, x):
-        if isinstance(x, np.ndarray):
-            x = self._from_numpy(x)
-        x = self.convblock(x)
-        x = x.view(-1, 4, 3, 256)
-        x = self.linear(x)
-        x = x.view(-1, 256 * 4 * 3)
-        dist = self.p(x)
-        value = self.value(x)
-        return dist, value
+    def forward(self, s):
+        if isinstance(s, np.ndarray):
+            s = self._from_numpy(s)
+        s = s.view(-1, 12, self.board_x, self.board_y)                # batch_size x 1 x board_x x board_y
+        print(s.shape)
+        s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
+        print(s.shape)
+        s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_y
+        print(s.shape)
+        s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
+        print(s.shape)
+        s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
+        print(s.shape)
+        s = s.view(-1, 512*(self.board_x-4)*(self.board_y-4))
+        print('wasaa')
+
+        s = F.dropout(F.relu(self.fc_bn1(self.fc1(s))), p=0.3, training=self.training)  # batch_size x 1024
+        s = F.dropout(F.relu(self.fc_bn2(self.fc2(s))), p=0.3, training=self.training)  # batch_size x 512
+
+        pi = self.fc3(s)                                                                         # batch_size x action_size
+        v = self.fc4(s)                                                                          # batch_size x 1
+
+        return pi, torch.tanh(v)
 
 
 class SimpleAlphaZeroPolicy(Policy):
