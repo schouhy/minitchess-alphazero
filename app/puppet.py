@@ -62,12 +62,16 @@ try:
     while (puppet.remote_version is None) or (puppet.remote_version == MINITCHESS_ALPHAZERO_VERSION):
         if not puppet.is_simulating() and (puppet.remote_status == MasterOfPuppetsStatus.SIMULATE):
             if puppet.weights_version != puppet.remote_weights_version:
-                response = requests.get(GET_WEIGHTS_URL)
-                if response.status_code == 200:
-                    content = json.loads(response.content)
-                    assert content['version'] == puppet.remote_weights_version
-                    content['weights'] = jsonpickle.decode(content['weights'])
-                    puppet.load_weights(**content)
+                try:
+                    response = requests.get(GET_WEIGHTS_URL)
+                    if response.status_code == 200:
+                        content = json.loads(response.content)
+                        assert content['version'] == puppet.remote_weights_version
+                        content['weights'] = jsonpickle.decode(content['weights'])
+                        puppet.load_weights(**content)
+                except Exception as e:
+                    logging.error(f'Exception raised while updating weights: {e}')
+                    continue
             data = puppet.run_episodes(10, client)
         sleep(5)
 finally:

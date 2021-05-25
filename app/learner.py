@@ -45,6 +45,9 @@ def on_message(client, userdata, msg):
     if msg_payload.get('minitchess_alphazero_version', None) != MINITCHESS_ALPHAZERO_VERSION:
         logging.warning(f'Received message from {msg_payload["userid"]} with wrong minitchess-alphazero version')
         return
+    if msg_payload.get('weights_version', None) != learner.weights_version:
+        logging.warning(f'Received message from {msg_payload["userid"]} with wrong weights version')
+        return
     try:
         learner.push_data(msg_payload['episode'])
         counter_users[msg_payload['userid']] = counter_users.get(msg_payload['userid'], 0) + 1
