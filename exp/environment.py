@@ -1,9 +1,9 @@
 import numpy as np
 from erlyx.environment import BaseEnvironment, Episode
-from chess import Board, Move, STARTING_FEN
+from chess import Board, Move#, STARTING_FEN
 from erlyx.types import EpisodeStatus
 import json
-
+STARTING_FEN = '3bk/3pp/5/5/3PP/3QK w 0 0'
 
 class TerminatedEpisodeStepException(BaseException):
     pass
