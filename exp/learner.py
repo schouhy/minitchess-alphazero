@@ -17,7 +17,7 @@ import numpy as np
 import torch
 import copy
 
-ARENA_GAME_NUMBER_PER_SIDE = 5
+ARENA_GAME_NUMBER_PER_SIDE = 3
 
 def collate_fn(batch):
     pis = []
