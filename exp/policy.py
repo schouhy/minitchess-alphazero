@@ -43,7 +43,7 @@ class Network(nn.Module):
     def forward(self, s):
         if isinstance(s, np.ndarray):
             s = self._from_numpy(s)
-        s = s.view(-1, 12, self.board_x, self.board_y)                # batch_size x 1 x board_x x board_y
+        s = s.view(-1, 14, self.board_x, self.board_y)                # batch_size x 1 x board_x x board_y
         print(s.shape)
         s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
         print(s.shape)
