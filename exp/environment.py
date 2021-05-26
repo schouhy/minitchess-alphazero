@@ -4,7 +4,12 @@ from chess import Board, Move#, STARTING_FEN
 from erlyx.types import EpisodeStatus
 import json
 STARTING_FEN = '3bk/3pp/5/5/3PP/3QK w 0 0'
-
+means = np.array([0.017721518987341773, 0.0, 0.00590717299578059, 0.0, 0.006751054852320675, 0.03333333333333333,
+        0.017721518987341773, 0.0, 0.006329113924050633, 0.0, 0.007594936708860759, 0.03333333333333333,
+        6.455696202531645, 20.253164556962027])
+stds = np.array([0.13193735919792796, 0.0, 0.07663079213330964, 0.0, 0.08188698376849422, 0.17950549357115012,
+        0.13193735919792796, 0.0, 0.07930357016545359, 0.0, 0.08681735797206201, 0.17950549357115012,
+        7.0149884169530585, 11.404494288901162])
 class TerminatedEpisodeStepException(BaseException):
     pass
 
@@ -67,6 +72,7 @@ class MinitChessEpisode(Episode):
         channels.append(np.full((6,5), int(no_progress_count)))
         channels.append(np.full((6,5), int(total_move_count)))
         self._board_array = np.asarray(channels)
+        self._board_array = (self._board_array - means.reshape(-1,1,1)) / (stds.reshape(-1,1,1) + 1e-8)
 
         # legal moves
         self._legal_moves_uci = list(self._board.legal_moves)
