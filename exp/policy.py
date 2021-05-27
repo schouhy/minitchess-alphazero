@@ -5,7 +5,6 @@ import torch
 
 NUM_ACTIONS = 554
 NUM_CHANNELS_BOARD_ARRAY = 14
-
 class ConvBlock(torch.nn.Module):
     def __init__(self,
                  nin,
@@ -66,7 +65,6 @@ class Network(torch.nn.Module):
     def forward(self, x):
         if isinstance(x, np.ndarray):
             x = self._from_numpy(x)
-        x = (x - x.mean()) / (x.std() + 1e-8)
         x = self.convblock(x)
         x = x.view(-1, 4, 3, 256)
         x = self.linear(x)
