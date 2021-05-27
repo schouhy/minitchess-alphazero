@@ -82,20 +82,28 @@ class MonteCarloTreeSearch:
 
 
 class SimpleAlphaZeroAgent(PolicyAgent):
-    def __init__(self, environment, policy, num_simulations, cpuct=1):
+    def __init__(self, environment, policy, num_simulations, cpuct=1, tau_change=6):
         super(SimpleAlphaZeroAgent, self).__init__(policy)
         self._environment = environment
         self._num_simulations = num_simulations
         self._cpuct = cpuct
+        self._tau_change = tau_change
+        print(tau_change)
+        self._count = None
         self.init_mcts()
 
     def init_mcts(self):
         self._mcts = MonteCarloTreeSearch(self._environment, self.policy.model,
                                           self._cpuct)
+        self._count = 0
 
     def select_action(self, observation):
+        self._count += 1
         info = self.policy.get_distribution(observation,
                                             self._mcts,
                                             self._num_simulations)
-        action = np.random.choice(info['legal_moves'], p=info['pi'])
+        if self._count < self._tau_change:
+            action = np.random.choice(info['legal_moves'], p=info['pi'])
+        else:
+            action = info['legal_moves'][np.argmax(info['pi'])]
         return ActionData(action=action, info=info)
