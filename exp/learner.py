@@ -18,7 +18,6 @@ import torch
 import copy
 
 ARENA_GAME_NUMBER_PER_SIDE = 3
-
 def collate_fn(batch):
     pis = []
     for item in batch:
