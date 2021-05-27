@@ -12,7 +12,7 @@ import requests
 import torch
 from erlyx import run_episodes
 
-from exp.agent import SimpleAlphaZeroAgent
+from exp.agent import RoundRobinReferee, SimpleAlphaZeroAgent
 from exp.callbacks import InfoRecorder, MonteCarloInit
 from exp.dataset import SimpleAlphaZeroDataset
 from exp.environment import MinitChessEnvironment
@@ -60,10 +60,7 @@ class SimulatePuppet:
     def __init__(self, userid, publish_topic):
         self._env = MinitChessEnvironment()
         self._network = Network()
-        policy = SimpleAlphaZeroPolicy(network=self._network)
-        self._agent = SimpleAlphaZeroAgent(environment=self._env,
-                                           policy=policy,
-                                           num_simulations=NUM_SIMULATIONS)
+        self._policy = SimpleAlphaZeroPolicy(network=self._network)
         self._userid = userid
         self._publish_topic = publish_topic
         self._is_simulating = False
@@ -99,9 +96,10 @@ class SimulatePuppet:
             self._is_simulating = True
             logging.info('Starting simulations')
             dataset = MQTTDataset(mqtt_client, self)
-            callbacks = [InfoRecorder(dataset), MonteCarloInit(self._agent)]
+            agents = [SimpleAlphaZeroAgent(environment=self._env,  policy=self._policy, num_simulations=NUM_SIMULATIONS) for _ in range(2)]
+            callbacks = [InfoRecorder(dataset), MonteCarloInit(agents[0]), MonteCarloInit(agents[1])]
             run_episodes(self._env,
-                         self._agent,
+                         RoundRobinReferee(agent_tuple=tuple(agents)),
                          num_episodes,
                          callbacks=callbacks, 
                          use_tqdm=False)
