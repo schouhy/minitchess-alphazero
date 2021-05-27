@@ -41,7 +41,7 @@ class MQTTDataset:
                 f'Not pushing episode. Master status is {self._puppet.remote_status}'
             )
             return True
-        if self._puppet.remote_version != MINITCHESS_ALPHAZERO_VERSION
+        if self._puppet.remote_version != MINITCHESS_ALPHAZERO_VERSION:
             logging.info(
                 f'Not pushing episode. Master version differs'
             )
