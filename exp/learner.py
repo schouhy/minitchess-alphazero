@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from exp.environment import MinitChessEpisode, NUM_ACTIONS
 from exp.dataset import SimpleAlphaZeroDataset
 from exp.agent import RoundRobinReferee, SimpleAlphaZeroAgent
-from exp.callbacks import WinnerRecorder, MonteCarloInit
+from exp.callbacks import WinnerRecorder, MonteCarloInit, RefereeInit
 from exp.policy import Network, SimpleAlphaZeroPolicy
 import numpy as np
 import torch
@@ -100,14 +100,14 @@ class SimpleAlphaZeroLearner(BaseLearner):
             # New agent plays white
             referee = RoundRobinReferee((new_agent, old_agent))
             winner_recorder = WinnerRecorder(referee)
-            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
+            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent), RefereeInit(referee)])
             new_agent_wins += winner_recorder.results[False]
             old_agent_wins += winner_recorder.results[True]
             logging.info(f'New agent playing with white results: {winner_recorder.results}')
             # New agent plays black
             referee = RoundRobinReferee((old_agent, new_agent))
             winner_recorder = WinnerRecorder(referee)
-            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent)])
+            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent), RefereeInit(referee)])
             logging.info(f'New agent playing with black results: {winner_recorder.results}')
             new_agent_wins += winner_recorder.results[True]
             old_agent_wins += winner_recorder.results[False]

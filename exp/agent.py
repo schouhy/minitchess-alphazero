@@ -13,6 +13,9 @@ class RoundRobinReferee(BaseAgent):
         self._turn = not self._turn
         return action
 
+    def reset(self):
+        self._turn = False
+
     @property
     def turn(self):
         return self._turn

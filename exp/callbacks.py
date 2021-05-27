@@ -61,6 +61,13 @@ class MonteCarloInit(BaseCallback):
     def on_episode_begin(self, initial_observation):
         self._agent.init_mcts()
 
+class RefereeInit(BaseCallback):
+    def __init__(self, referee):
+        self._referee = referee
+    
+    def on_episode_begin(self, initial_observation):
+        self._referee.reset()
+
 
 class WeightUpdater(BaseCallback):
     def __init__(self, learner, dataset, update_interval, init_episodes=0):
