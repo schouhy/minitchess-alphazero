@@ -36,20 +36,24 @@ class MQTTDataset:
         self._mqtt_client = mqtt_client
 
     def push(self, data):
-        if self._puppet.remote_status == MasterOfPuppetsStatus.SIMULATE:
-            data = {
-                'episode': data,
-                'userid': self._puppet.userid,
-                'weights_version': self._puppet.weights_version,
-                'minitchess_alphazero_version': MINITCHESS_ALPHAZERO_VERSION
-            }
-            msginfo = self._mqtt_client.publish(self._puppet.publish_topic, json.dumps(data), qos=2)
-            logging.info(f"published episode with mid={msginfo.mid}")
-        else:
+        if self._puppet.remote_status != MasterOfPuppetsStatus.SIMULATE:
             logging.info(
                 f'Not pushing episode. Master status is {self._puppet.remote_status}'
             )
             return True
+        if self._puppet.remote_version != MINITCHESS_ALPHAZERO_VERSION
+            logging.info(
+                f'Not pushing episode. Master version differs'
+            )
+            return True
+        data = {
+            'episode': data,
+            'userid': self._puppet.userid,
+            'weights_version': self._puppet.weights_version,
+            'minitchess_alphazero_version': MINITCHESS_ALPHAZERO_VERSION
+        }
+        msginfo = self._mqtt_client.publish(self._puppet.publish_topic, json.dumps(data), qos=2)
+        logging.info(f"published episode with mid={msginfo.mid}")
 
 
 class SimulatePuppet:
