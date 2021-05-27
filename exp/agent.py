@@ -47,6 +47,7 @@ class MonteCarloTreeSearch:
             self['visited'].append(node)
             if episode.is_done(): 
                 self['terminal'][node]= -episode.get_reward()
+                return -self['terminal'][node]
             legal_moves = episode.get_legal_moves()
             self['Q'][node] = np.zeros(len(legal_moves))
             self['N'][node] = np.zeros(len(legal_moves))
