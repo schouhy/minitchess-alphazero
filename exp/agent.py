@@ -64,7 +64,7 @@ class MonteCarloTreeSearch:
         Q, N, P = self['Q'][node], self['N'][node], self['P'][node]
         legal_moves = self['legal_moves'][node]
         if is_root_node:
-            P = P*0.75 + 0.25*np.random.dirichlet([0.08]*len(legal_moves))
+            P = P*0.75 + 0.25*np.random.dirichlet([0.6]*len(legal_moves))
 
         u = Q + self._cpuct * P * np.sqrt(N.sum()) / (1 + N)
         action = u.argmax()
