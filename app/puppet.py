@@ -48,6 +48,7 @@ def on_message(client, userdata, msg):
     if 'weights_version' in msg_payload:
         puppet.remote_weights_version = msg_payload['weights_version']
 
+
 puppet = SimulatePuppet(USERID, PUBLISH_EPISODE_TOPIC)
 client = mqtt.Client(userdata={'puppet': puppet})
 client.on_connect = on_connect
