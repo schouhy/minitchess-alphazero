@@ -69,6 +69,7 @@ class MonteCarloTreeSearch:
         u = Q + self._cpuct * P * np.sqrt(N.sum()) / (1 + N)
         action = u.argmax()
         episode.step(legal_moves[action], return_status=False)
+        episode = self._environment.new_episode(fen=episode.get_observation())
         v = self._search(episode)
 
         Q[action] = (N[action] * Q[action] + v) / (N[action] + 1)
