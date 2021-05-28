@@ -176,7 +176,7 @@ class LearnPuppet:
     def update(self):
         self._network.load_state_dict(self.weights)
         result = self._learner.update(self._dataset)
-        logging.info(f'New agent won {result*100}% of games')
+        # logging.info(f'New agent won {result*100}% of games')
         #if result > 0.55:
         self.weights = self._network.state_dict().copy()
         return self.get_weights_dict()
