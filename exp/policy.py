@@ -50,12 +50,16 @@ class Network(torch.nn.Module):
         layers.append(ConvBlock(NUM_CHANNELS_BOARD_ARRAY, 256, 3, 1, 1))
         for _ in range(5):
             layers.append(ResidualBlock(256, 256, 256))
-        layers.append(ConvBlock(256, 256, 3, 1, 1))
-        self.convblock = torch.nn.Sequential(*layers)
-        self.linear = torch.nn.Sequential(torch.nn.Linear(256, 256),
-                                          torch.nn.ReLU())
-        self.p = torch.nn.Sequential(torch.nn.Linear(256 * 6 * 5, 256), torch.nn.ReLU() ,torch.nn.Linear(256, num_actions))
-        self.value = torch.nn.Sequential(torch.nn.Linear(256 * 6 * 5, 1), torch.nn.Tanh())
+        self.resbody = torch.nn.Sequential(*layers)
+        self.pconv = ConvBlock(256, 2, 1, 1, 1)
+        self.plinear = torch.nn.Linear(2 * 6 * 5, num_actions)
+
+        self.vconv = ConvBlock(256, 1, 1, 1, 1)
+        self.vlinear = torch.nn.Sequential(
+                torch.nn.Linear(6 * 5, 256),
+                torch.nn.ReLU(),
+                torch.nn.Linear(256, 1), 
+                torch.nn.Tanh())
 
     @staticmethod
     def _from_numpy(x):
@@ -64,13 +68,10 @@ class Network(torch.nn.Module):
     def forward(self, x):
         if isinstance(x, np.ndarray):
             x = self._from_numpy(x)
-        x = self.convblock(x)
-        x = x.view(-1, 6, 5, 256)
-        x = self.linear(x)
-        x = x.view(-1, 256 * 6 * 5)
-        dist = self.p(x)
-        value = self.value(x)
-        return dist, value
+        x = self.resbody(x)
+        p = self.plinear(self.pconv(x).view(-1,  2 * 6 * 5))
+        v = self.vlinear(self.vconv(x).view(-1, 6 * 5))
+        return p, v
 
 
 class SimpleAlphaZeroPolicy(Policy):
