@@ -59,7 +59,7 @@ def on_message(client, userdata, msg):
 
 
 last_episode_period = 0
-episode_frequency = 100
+episode_frequency = 300
 batch_size = 64
 learning_rate = 1e-2
 epochs = 10
