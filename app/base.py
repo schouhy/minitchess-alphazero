@@ -112,7 +112,7 @@ class SimulatePuppet:
 
     def load_weights(self, weights, version):
         logging.info(f'Loading weights {version} ...')
-        self._network.load_state_dict(weights, map_location=DEVICE)
+        self._network.load_state_dict(weights)
         self._weights_version = version
 
     def is_simulating(self):
@@ -154,7 +154,7 @@ class LearnPuppet:
 
     @weights.setter
     def weights(self, value):
-        self._weights = value
+        self._weights = {k: v.cpu() for k, v in value} 
         self._weights_version = datetime.now().strftime('%Y%m%d%H%M%S')
 
     @property
@@ -176,11 +176,11 @@ class LearnPuppet:
 
 
     def update(self):
-        self._network.load_state_dict(self.weights, map_location=DEVICE)
+        self._network.load_state_dict(self.weights)
         result = self._learner.update(self._dataset)
         # logging.info(f'New agent won {result*100}% of games')
         #if result > 0.55:
-        self.weights = self._network.state_dict().copy()
+        self.weights = self._network.state_dict()
         return self.get_weights_dict()
 
     def get_weights_dict(self):
