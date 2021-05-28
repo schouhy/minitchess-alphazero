@@ -65,9 +65,9 @@ class Network(torch.nn.Module):
         if isinstance(x, np.ndarray):
             x = self._from_numpy(x)
         x = self.convblock(x)
-        x = x.view(-1, 4, 3, 256)
+        x = x.view(-1, 6, 5, 256)
         x = self.linear(x)
-        x = x.view(-1, 256 * 4 * 3)
+        x = x.view(-1, 256 * 6 * 5)
         dist = self.p(x)
         value = self.value(x)
         return dist, value
