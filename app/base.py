@@ -154,7 +154,7 @@ class LearnPuppet:
 
     @weights.setter
     def weights(self, value):
-        self._weights = {k: v.cpu() for k, v in value} 
+        self._weights = {k: v.cpu() for k, v in value.items()} 
         self._weights_version = datetime.now().strftime('%Y%m%d%H%M%S')
 
     @property
