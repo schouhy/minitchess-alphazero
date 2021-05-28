@@ -24,6 +24,8 @@ PUSH_WEIGHTS_URL = '/'.join([LOGGER_URL, 'push_weights'])
 NUM_SIMULATIONS = 25
 MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
 
+DEVICE = torch.device('cuda') if torch.cuda.is_avaiable() else torch.device('cpu')
+logging.info(f'PyTorch is using device {DEVICE}')
 class MasterOfPuppetsStatus(IntEnum):
     OFF = 1
     SIMULATE = 2
@@ -110,7 +112,7 @@ class SimulatePuppet:
 
     def load_weights(self, weights, version):
         logging.info(f'Loading weights {version} ...')
-        self._network.load_state_dict(weights)
+        self._network.load_state_dict(weights, map_location=DEVICE)
         self._weights_version = version
 
     def is_simulating(self):
@@ -174,7 +176,7 @@ class LearnPuppet:
 
 
     def update(self):
-        self._network.load_state_dict(self.weights)
+        self._network.load_state_dict(self.weights, map_location=DEVICE)
         result = self._learner.update(self._dataset)
         # logging.info(f'New agent won {result*100}% of games')
         #if result > 0.55:
