@@ -88,8 +88,6 @@ class SimpleAlphaZeroAgent(PolicyAgent):
         self._num_simulations = num_simulations
         self._cpuct = cpuct
         self._tau_change = tau_change
-        print(tau_change)
-        self._count = None
         self.init_mcts()
 
     def init_mcts(self):
@@ -98,12 +96,13 @@ class SimpleAlphaZeroAgent(PolicyAgent):
         self._count = 0
 
     def select_action(self, observation):
-        self._count += 1
         info = self.policy.get_distribution(observation,
                                             self._mcts,
                                             self._num_simulations)
-        if self._count < self._tau_change:
+        num_moves = int(observation.split()[3])
+        if num_moves < self._tau_change:
             action = np.random.choice(info['legal_moves'], p=info['pi'])
         else:
-            action = info['legal_moves'][np.argmax(info['pi'])]
+            maxima = np.where(info['pi'] == info['pi'].max())[0]
+            action = info['legal_moves'][np.random.choice(maxima)]
         return ActionData(action=action, info=info)

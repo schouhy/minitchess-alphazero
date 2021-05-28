@@ -46,17 +46,16 @@ class ResidualBlock(torch.nn.Module):
 class Network(torch.nn.Module):
     def __init__(self, num_actions=NUM_ACTIONS):
         super(Network, self).__init__()
-        self.num_actions = num_actions
         layers = []
         layers.append(ConvBlock(NUM_CHANNELS_BOARD_ARRAY, 256, 3, 1, 1))
-        for _ in range(3):
+        for _ in range(5):
             layers.append(ResidualBlock(256, 256, 256))
-        layers.append(ConvBlock(256, 256, 3, 1, 0))
+        layers.append(ConvBlock(256, 256, 3, 1, 1))
         self.convblock = torch.nn.Sequential(*layers)
         self.linear = torch.nn.Sequential(torch.nn.Linear(256, 256),
                                           torch.nn.ReLU())
-        self.p = torch.nn.Linear(256 * 4 * 3, self.num_actions)
-        self.value = torch.nn.Sequential(torch.nn.Linear(256 * 4 * 3, 1), torch.nn.Tanh())
+        self.p = torch.nn.Sequential(torch.nn.Linear(256 * 6 * 5, 256), torch.nn.ReLU() ,torch.nn.Linear(256, num_actions))
+        self.value = torch.nn.Sequential(torch.nn.Linear(256 * 6 * 5, 1), torch.nn.Tanh())
 
     @staticmethod
     def _from_numpy(x):
