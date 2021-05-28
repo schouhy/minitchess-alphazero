@@ -61,7 +61,7 @@ def on_message(client, userdata, msg):
 last_episode_period = 0
 episode_frequency = 100
 batch_size = 64
-learning_rate = 1e-3
+learning_rate = 1e-2
 epochs = 10
 learner = LearnPuppet(USERID, batch_size, learning_rate, epochs)
 

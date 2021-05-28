@@ -36,7 +36,7 @@ class MQTTDataset:
         self._mqtt_client = mqtt_client
 
     def push(self, data):
-        if self._puppet.remote_status != MasterOfPuppetsStatus.SIMULATE:
+        if self._puppet.remote_status == MasterOfPuppetsStatus.OFF:
             logging.info(
                 f'Not pushing episode. Master status is {self._puppet.remote_status}'
             )
