@@ -24,7 +24,7 @@ PUSH_WEIGHTS_URL = '/'.join([LOGGER_URL, 'push_weights'])
 NUM_SIMULATIONS = 25
 MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
 
-DEVICE = torch.device('cuda') if torch.cuda.is_avaiable() else torch.device('cpu')
+DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 logging.info(f'PyTorch is using device {DEVICE}')
 class MasterOfPuppetsStatus(IntEnum):
     OFF = 1
