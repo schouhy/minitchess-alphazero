@@ -61,7 +61,7 @@ client.connect(MQTT_BROKER_HOST, 1883, 60)
 client.loop_start()
 try:
     while (puppet.remote_version is None) or (puppet.remote_version == MINITCHESS_ALPHAZERO_VERSION):
-        if (not puppet.is_simulating()) and (puppet.remote_status is not None) and (puppet.remote_status != MasterOfPuppetsStatus.OFF):
+        if (not puppet.is_simulating()) and (puppet.remote_status is not None) and (puppet.remote_status == MasterOfPuppetsStatus.SIMULATE):
             if puppet.weights_version != puppet.remote_weights_version:
                 try:
                     response = requests.get(GET_WEIGHTS_URL)

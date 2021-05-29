@@ -39,8 +39,6 @@ class MQTTDataset:
 
     def push(self, data):
         if self._puppet.remote_status == MasterOfPuppetsStatus.OFF:
-            logging.info(
-                f'Not pushing episode. Master status is {self._puppet.remote_status}'
             )
             return True
         if self._puppet.remote_version != MINITCHESS_ALPHAZERO_VERSION:
@@ -124,8 +122,8 @@ class LearnPuppet:
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid])
 
         self._env = MinitChessEnvironment()
-        self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
-        self._dataset_buffer = []
+        self._dataset = None 
+        self._init_dataset()
         self._network = Network()
         self._learner = SimpleAlphaZeroLearner(self._env, NUM_SIMULATIONS,
                                                self._network, batch_size,
@@ -135,6 +133,9 @@ class LearnPuppet:
         self._weights = None
         self.weights = self._network.state_dict()
         self._status = MasterOfPuppetsStatus.SIMULATE
+
+    def init_dataset(self):
+        self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
 
     @property
     def episode_counter(self):
@@ -168,11 +169,8 @@ class LearnPuppet:
         self._status = MasterOfPuppetsStatus.SIMULATE
 
     def push_data(self, data):
-        self._dataset_buffer.extend(data)
-        self._episode_counter += 1
         if MasterOfPuppetsStatus[self.status] == MasterOfPuppetsStatus.SIMULATE:
             self._dataset.push(data)
-            self._dataset_buffer = []
 
 
     def update(self):
@@ -181,6 +179,7 @@ class LearnPuppet:
         # logging.info(f'New agent won {result*100}% of games')
         #if result > 0.55:
         self.weights = self._network.state_dict()
+        self.init_dataset()
         return self.get_weights_dict()
 
     def get_weights_dict(self):

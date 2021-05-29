@@ -45,24 +45,25 @@ def on_message(client, userdata, msg):
     if msg_payload.get('minitchess_alphazero_version', None) != MINITCHESS_ALPHAZERO_VERSION:
         logging.warning(f'Received message from {msg_payload["userid"]} with wrong minitchess-alphazero version')
         return
-#     if msg_payload.get('weights_version', None) != learner.weights_version:
-#         logging.warning(f'Received message from {msg_payload["userid"]} with wrong weights version')
-#         return
+    if msg_payload.get('weights_version', None) != learner.weights_version:
+        logging.warning(f'Received message from {msg_payload["userid"]} with wrong weights version')
+        return
     try:
         learner.push_data(msg_payload['episode'])
         counter_users[msg_payload['userid']] = counter_users.get(msg_payload['userid'], 0) + 1
         counter_versions[msg_payload['weights_version']] = counter_versions.get(msg_payload['weights_version'], 0) + 1
         logging.info(f'users counter: {counter_users}')
         logging.info(f'version counter: {counter_versions}')
+        logging.info(f'dataset count: {len(learner._dataset)}'
     except Exception as e:
         logging.info(f'Exception on push_data: {e}')
 
 
 last_episode_period = 0
-episode_frequency = 300
+episode_frequency = 1000
 batch_size = 64
 learning_rate = 1e-2
-epochs = 10
+epochs = 20
 learner = LearnPuppet(USERID, batch_size, learning_rate, epochs)
 
 client = mqtt.Client(userdata={'learner': learner})
