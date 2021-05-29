@@ -54,13 +54,13 @@ def on_message(client, userdata, msg):
         counter_versions[msg_payload['weights_version']] = counter_versions.get(msg_payload['weights_version'], 0) + 1
         logging.info(f'users counter: {counter_users}')
         logging.info(f'version counter: {counter_versions}')
-        logging.info(f'dataset count: {len(learner._dataset)}'
+        logging.info(f'dataset count: {len(learner._dataset)}')
     except Exception as e:
         logging.info(f'Exception on push_data: {e}')
 
 
 last_episode_period = 0
-episode_frequency = 1000
+episode_frequency = 100
 batch_size = 64
 learning_rate = 1e-2
 epochs = 20

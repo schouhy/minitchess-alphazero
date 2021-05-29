@@ -38,7 +38,9 @@ class MQTTDataset:
         self._mqtt_client = mqtt_client
 
     def push(self, data):
-        if self._puppet.remote_status == MasterOfPuppetsStatus.OFF:
+        if self._puppet.remote_status != MasterOfPuppetsStatus.SIMULATE:
+            logging.info(
+                f'Not pushing episode. Master Status is not SIMULATE'
             )
             return True
         if self._puppet.remote_version != MINITCHESS_ALPHAZERO_VERSION:
@@ -134,7 +136,7 @@ class LearnPuppet:
         self.weights = self._network.state_dict()
         self._status = MasterOfPuppetsStatus.SIMULATE
 
-    def init_dataset(self):
+    def _init_dataset(self):
         self._dataset = SimpleAlphaZeroDataset(max_length=1_000_000)
 
     @property
@@ -170,6 +172,7 @@ class LearnPuppet:
 
     def push_data(self, data):
         if MasterOfPuppetsStatus[self.status] == MasterOfPuppetsStatus.SIMULATE:
+            self._episode_counter += 1
             self._dataset.push(data)
 
 
@@ -179,7 +182,7 @@ class LearnPuppet:
         logging.info(f'New agent won {result*100}% of games')
         if result > 0.55:
             self.weights = self._network.state_dict()
-            self.init_dataset()
+            self._init_dataset()
             return self.get_weights_dict()
 
     def get_weights_dict(self):
