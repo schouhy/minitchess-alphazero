@@ -21,7 +21,7 @@ from exp.policy import Network, SimpleAlphaZeroPolicy
 
 LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
 PUSH_WEIGHTS_URL = '/'.join([LOGGER_URL, 'push_weights'])
-NUM_SIMULATIONS = 100
+NUM_SIMULATIONS = 50
 MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
 GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights']) 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
