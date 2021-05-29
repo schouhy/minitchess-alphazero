@@ -13,7 +13,7 @@ from time import sleep
 
 import paho.mqtt.client as mqtt
 
-from app.base import MasterOfPuppetsStatus, SimulatePuppet
+from app.base import MasterOfPuppetsStatus, SimulatePuppet, download_weights
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 # MQTT info
@@ -23,7 +23,6 @@ MQTT_PASSWORD = os.getenv('MQTT_PASSWORD')
 LEARNER_TOPIC = os.getenv('LEARNER_TOPIC')
 PUBLISH_EPISODE_TOPIC = os.getenv('PUBLISH_EPISODE_TOPIC')
 LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
-GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights']) 
 MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
 
 
@@ -64,12 +63,9 @@ try:
         if (not puppet.is_simulating()) and (puppet.remote_status is not None) and (puppet.remote_status == MasterOfPuppetsStatus.SIMULATE):
             if puppet.weights_version != puppet.remote_weights_version:
                 try:
-                    response = requests.get(GET_WEIGHTS_URL)
-                    if response.status_code == 200:
-                        content = json.loads(response.content)
-                        assert content['version'] == puppet.remote_weights_version
-                        content['weights'] = jsonpickle.decode(content['weights'])
-                        puppet.load_weights(**content)
+                    content = download_weights()
+                    assert content['version'] == puppet.remote_weights_version
+                    puppet.load_weights(**content)
                 except Exception as e:
                     logging.error(f'Exception raised while updating weights: {e}')
                     continue

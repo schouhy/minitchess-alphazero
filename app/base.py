@@ -23,9 +23,20 @@ LOGGER_URL = os.getenv('LOGGER_URL', 'localhost')
 PUSH_WEIGHTS_URL = '/'.join([LOGGER_URL, 'push_weights'])
 NUM_SIMULATIONS = 25
 MINITCHESS_ALPHAZERO_VERSION = os.getenv('MINITCHESS_ALPHAZERO_VERSION')
-
+GET_WEIGHTS_URL = '/'.join([LOGGER_URL, 'get_weights']) 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 logging.info(f'PyTorch is using device {DEVICE}')
+
+def download_weights():
+    response = requests.get(GET_WEIGHTS_URL)
+    logging.info('Downloading weights...')
+    if response.status_code == 200:
+        logging.info('Successfully downloaded weights')
+        content = json.loads(response.content)
+        content['weights'] = jsonpickle.decode(content['weights'])
+        return content
+    raise Exception(f"RLWEB returned status code {response.status_code} while getting weights")
+
 class MasterOfPuppetsStatus(IntEnum):
     OFF = 1
     SIMULATE = 2

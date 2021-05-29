@@ -12,7 +12,9 @@ from time import sleep
 
 import paho.mqtt.client as mqtt
 
-from app.base import LearnPuppet, MasterOfPuppetsStatus
+from app.base import LearnPuppet, MasterOfPuppetsStatus, download_weights
+
+INITIALIZE_WITH_REMOTE_WEIGHTS = True
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 
@@ -65,6 +67,10 @@ batch_size = 64
 learning_rate = 1e-2
 epochs = 20
 learner = LearnPuppet(USERID, batch_size, learning_rate, epochs)
+if INITIALIZE_WITH_REMOTE_WEIGHTS:
+    content = download_weights()
+    logging.info(f'Initializing weights with remote version: {content["version"]}')
+    learner.weights = content['weights']
 
 client = mqtt.Client(userdata={'learner': learner})
 client.on_connect = on_connect
@@ -86,6 +92,7 @@ def push_weights(url, data):
                 f'Cannot report end of training. Master returned status code {status_code}. Retry in 10 seconds...'
             )
             sleep(1)
+
 
 try:
     push_weights(learner.push_url, learner.get_weights_dict())
