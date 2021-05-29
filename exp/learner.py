@@ -53,17 +53,16 @@ class AvgSmoothLoss:
 
 
 class SimpleAlphaZeroLearner(BaseLearner):
-    def __init__(self, env, num_simulations, network, batch_size, learning_rate, epochs):
+    def __init__(self, env, num_simulations, network, batch_size, epochs, optim_params):
         self._env = env
         self._num_simulations = num_simulations
         self._network = network
         self._batch_size = batch_size
-        self._learning_rate = learning_rate
         self._epochs = epochs
+        self._optim_params = optim_params
 
     def update(self, dataset: SimpleAlphaZeroDataset):
-        optimizer = torch.optim.AdamW(self._network.parameters(),
-                                      lr=self._learning_rate)
+        optimizer = torch.optim.SGD(self._network.parameters(), **self._optim_params)
         dataloader = DataLoader(dataset,
                                 batch_size=self._batch_size,
                                 shuffle=True,

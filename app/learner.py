@@ -14,7 +14,7 @@ import paho.mqtt.client as mqtt
 
 from app.base import LearnPuppet, MasterOfPuppetsStatus, download_weights
 
-INITIALIZE_WITH_REMOTE_WEIGHTS = True
+INITIALIZE_WITH_REMOTE_WEIGHTS = False
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 
@@ -64,9 +64,10 @@ def on_message(client, userdata, msg):
 last_episode_period = 0
 episode_frequency = 100
 batch_size = 64
-learning_rate = 1e-2
 epochs = 20
-learner = LearnPuppet(USERID, batch_size, learning_rate, epochs)
+optim_params = {'lr': 1e-2, 'momentum': 0.9, 'weight_decay':1e-4}
+
+learner = LearnPuppet(USERID, batch_size, epochs, optim_params)
 if INITIALIZE_WITH_REMOTE_WEIGHTS:
     content = download_weights()
     logging.info(f'Initializing weights with remote version: {content["version"]}')

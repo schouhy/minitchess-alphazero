@@ -131,7 +131,7 @@ class SimulatePuppet:
 
 
 class LearnPuppet:
-    def __init__(self, userid, batch_size, learning_rate, epochs):
+    def __init__(self, userid, batch_size, epochs, optim_params):
         self._push_url = '/'.join([PUSH_WEIGHTS_URL, userid])
 
         self._env = MinitChessEnvironment()
@@ -140,7 +140,7 @@ class LearnPuppet:
         self._network = Network()
         self._learner = SimpleAlphaZeroLearner(self._env, NUM_SIMULATIONS,
                                                self._network, batch_size,
-                                               learning_rate, epochs)
+                                               epochs, optim_params)
         self._episode_counter = 0
         self._weights_version = None
         self._weights = None
