@@ -3,7 +3,7 @@ from erlyx.environment import BaseEnvironment, Episode
 from chess import Board, Move#, STARTING_FEN
 from erlyx.types import EpisodeStatus
 import json
-STARTING_FEN = '3bk/3pp/5/5/3PP/3QK w 0 1'
+STARTING_FEN = '2nbk/2ppp/5/5/PPP2/KBN2 w 0 1'
 means = np.array([0.017721518987341773, 0.0, 0.00590717299578059, 0.0, 0.006751054852320675, 0.03333333333333333,
         0.017721518987341773, 0.0, 0.006329113924050633, 0.0, 0.007594936708860759, 0.03333333333333333,
         6.455696202531645, 20.253164556962027])

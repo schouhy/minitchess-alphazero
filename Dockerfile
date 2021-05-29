@@ -11,7 +11,7 @@ RUN pip install -r requirements.txt
 ENV ERLYX_VERSION=0f6409c3ff6aea417d89c7e8922db99be7edc606
 RUN pip install git+https://git@github.com/schouhy/erlyx.git@$ERLYX_VERSION
 
-ENV PYTHON_CHESS_VERSION=53194262f25976b5a4f2d0cbd43ad96d6fc4082e
+ENV PYTHON_CHESS_VERSION=3ca5274c4f38cb5c2789824bb895be9b39bd9c20
 RUN pip install git+https://git@github.com/schouhy/python-chess.git@$PYTHON_CHESS_VERSION
 
 # ENV MINITCHESS_ALPHAZERO_VERSION=5f83fc81137713fb26c9032581b054c683269dc3
