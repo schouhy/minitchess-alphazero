@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 NUM_ACTIONS = 554
-NUM_CHANNELS_BOARD_ARRAY = 14
+NUM_CHANNELS_BOARD_ARRAY = 13
 class ConvBlock(torch.nn.Module):
     def __init__(self,
                  nin,
