@@ -51,8 +51,8 @@ class Network(torch.nn.Module):
         for _ in range(5):
             layers.append(ResidualBlock(256, 256, 256))
         self.resbody = torch.nn.Sequential(*layers)
-        self.pconv = ConvBlock(256, 6, 1, 1, 0)
-        self.plinear = torch.nn.Linear(6 * 6 * 5, num_actions)
+        self.pconv = ConvBlock(256, 2, 1, 1, 0)
+        self.plinear = torch.nn.Linear(2 * 6 * 5, num_actions)
 
         self.vconv = ConvBlock(256, 1, 1, 1, 0)
         self.vlinear = torch.nn.Sequential(
@@ -69,7 +69,7 @@ class Network(torch.nn.Module):
         if isinstance(x, np.ndarray):
             x = self._from_numpy(x)
         x = self.resbody(x)
-        p = self.plinear(self.pconv(x).view(-1,  6 * 6 * 5))
+        p = self.plinear(self.pconv(x).view(-1,  2 * 6 * 5))
         v = self.vlinear(self.vconv(x).view(-1, 6 * 5))
         return p, v
 
