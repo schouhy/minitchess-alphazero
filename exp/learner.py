@@ -18,42 +18,50 @@ import torch
 import copy
 
 ARENA_GAME_NUMBER_PER_SIDE = 3
+
+
 def collate_fn(batch):
-    pis = []
+    pib = []
+    channelsb = []
+    clockb = []
+    rewardb = []
     for item in batch:
-        pi = np.zeros(NUM_ACTIONS)
-        pi[item['legal_moves']] = item['pi']
-        pis.append(pi)
-    obs = [
-        MinitChessEpisode(o['observation']).get_board_array()[None]
-        for o in batch
+        pi = torch.zeros(NUM_ACTIONS).float()
+        pi[item['legal_moves']] = torch.FloatTensor(item['pi'])
+        pib.append(pi)
+        channels, clock = Network.process_observation(item['observation'])
+        channelsb.append(channels)
+        clockb.append(clock)
+        rewardb.append(item['reward'])
+    return [
+        torch.vstack(pib),
+        torch.cat(channelsb, dim=0),
+        torch.FloatTensor(clockb).reshape(-1, 1),
+        torch.FloatTensor(rewardb).reshape(-1, 1)
     ]
-    rewards = [o['reward'] for o in batch]
-    return map(
-        torch.FloatTensor,
-        [np.vstack(pis), np.vstack(obs),
-         np.vstack(rewards)])
 
 
 class AvgSmoothLoss:
-    def __init__(self, beta=0.98): 
+    def __init__(self, beta=0.98):
         self.beta = beta
-        
-    def reset(self):   
+
+    def reset(self):
         self.count = 0
         self.val = 0.
         return self
 
     def accumulate(self, new_val):
         self.count += 1
-        self.val = new_val + self.beta*(self.val - new_val)
+        self.val = new_val + self.beta * (self.val - new_val)
 
     @property
-    def value(self): return self.val/(1-self.beta**self.count)
+    def value(self):
+        return self.val / (1 - self.beta**self.count)
 
 
 class SimpleAlphaZeroLearner(BaseLearner):
-    def __init__(self, env, num_simulations, network, batch_size, epochs, optim_params):
+    def __init__(self, env, num_simulations, network, batch_size, epochs,
+                 optim_params):
         self._env = env
         self._num_simulations = num_simulations
         self._network = network
@@ -62,7 +70,8 @@ class SimpleAlphaZeroLearner(BaseLearner):
         self._optim_params = optim_params
 
     def update(self, dataset: SimpleAlphaZeroDataset):
-        optimizer = torch.optim.SGD(self._network.parameters(), **self._optim_params)
+        optimizer = torch.optim.SGD(self._network.parameters(),
+                                    **self._optim_params)
         dataloader = DataLoader(dataset,
                                 batch_size=self._batch_size,
                                 shuffle=True,
@@ -73,25 +82,28 @@ class SimpleAlphaZeroLearner(BaseLearner):
 
         # Update params
         for epoch in range(self._epochs):
-            for pib, boardb, reward in iter(dataloader):
-                pib, boardb, reward = pib.cuda(), boardb.cuda(), reward.cuda()
-                pb, vb = model(boardb)
+            for pib, channelsb, clockb, rewardb in iter(dataloader):
+                pib, channelsb, clockb, rewardb = pib.cuda(), channelsb.cuda(), clockb.cuda(), rewardb.cuda()
+                pb, vb = model((channelsb, clockb))
                 pb = pb.log_softmax(-1)
-                loss = ((vb - reward)**2 - (pib * pb).sum(1)).mean()
+                loss = ((vb - rewardb)**2 - (pib * pb).sum(1)).mean()
                 optimizer.zero_grad()
                 loss.backward()
                 metric.accumulate(loss.detach().data.cpu().numpy().item())
                 optimizer.step()
             logging.info(f'Epoch {epoch}: {metric.value:.2f}')
 
+
 #         # Compete against older version
         old_network = Network()
         old_network.load_state_dict(old_state_dict)
         old_policy = SimpleAlphaZeroPolicy(old_network)
-        old_agent = SimpleAlphaZeroAgent(self._env, old_policy, self._num_simulations)
-        
+        old_agent = SimpleAlphaZeroAgent(self._env, old_policy,
+                                         self._num_simulations)
+
         new_policy = SimpleAlphaZeroPolicy(model)
-        new_agent = SimpleAlphaZeroAgent(self._env, new_policy, self._num_simulations)
+        new_agent = SimpleAlphaZeroAgent(self._env, new_policy,
+                                         self._num_simulations)
         new_agent_wins = 0
         old_agent_wins = 0
         with torch.no_grad():
@@ -99,19 +111,35 @@ class SimpleAlphaZeroLearner(BaseLearner):
             # New agent plays white
             referee = RoundRobinReferee((new_agent, old_agent))
             winner_recorder = WinnerRecorder(referee)
-            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent), RefereeInit(referee)])
+            run_episodes(self._env,
+                         referee,
+                         n_episodes=ARENA_GAME_NUMBER_PER_SIDE,
+                         callbacks=[
+                             winner_recorder,
+                             MonteCarloInit(old_agent),
+                             MonteCarloInit(new_agent),
+                             RefereeInit(referee)
+                         ])
             new_agent_wins += winner_recorder.results[False]
             old_agent_wins += winner_recorder.results[True]
-            logging.info(f'New agent playing with white results: {winner_recorder.results}')
+            logging.info(
+                f'New agent playing with white results: {winner_recorder.results}'
+            )
             # New agent plays black
             referee = RoundRobinReferee((old_agent, new_agent))
             winner_recorder = WinnerRecorder(referee)
-            run_episodes(self._env, referee, n_episodes=ARENA_GAME_NUMBER_PER_SIDE, callbacks=[winner_recorder,MonteCarloInit(old_agent), MonteCarloInit(new_agent), RefereeInit(referee)])
-            logging.info(f'New agent playing with black results: {winner_recorder.results}')
+            run_episodes(self._env,
+                         referee,
+                         n_episodes=ARENA_GAME_NUMBER_PER_SIDE,
+                         callbacks=[
+                             winner_recorder,
+                             MonteCarloInit(old_agent),
+                             MonteCarloInit(new_agent),
+                             RefereeInit(referee)
+                         ])
+            logging.info(
+                f'New agent playing with black results: {winner_recorder.results}'
+            )
             new_agent_wins += winner_recorder.results[True]
             old_agent_wins += winner_recorder.results[False]
-        return new_agent_wins/(new_agent_wins + old_agent_wins + 1e-8)
-
-
-        
-
+        return new_agent_wins / (new_agent_wins + old_agent_wins + 1e-8)

@@ -25,7 +25,6 @@ MOVES_DICT_INV = {side: {v: k for k, v in MOVES_DICT[side].items()} for side in 
 NUM_ACTIONS = len(MOVES_DICT[True])
 
 # TODO: Mover esto a python-chess e importar esta variable de ahí
-MAX_NUM_MOVES_ALLOWED = 30
 
 
 class MinitChessEpisode(Episode):
@@ -38,16 +37,6 @@ class MinitChessEpisode(Episode):
         self._legal_moves = None
         self._legal_moves_board = None
         self._update_attributes()
-
-    def _int_to_array(self, bitBoard):
-        return np.unpackbits(np.array([bitBoard],
-                                      dtype='>i8').view(np.uint8))[-30:]
-
-    def _int_to_board(self, bitBoard, perspective):
-        if perspective:
-            return self._int_to_array(bitBoard).reshape(6, 5)
-        else:
-            return self._int_to_array(bitBoard).reshape(6, 5)[::-1, ::-1]
 
     def _update_attributes(self):
         # observation (fen)
@@ -64,19 +53,6 @@ class MinitChessEpisode(Episode):
         else: 
             self_reward, self._done = None, False
 
-        # board_array
-        channels = []
-        for color in [self.turn, ~self.turn]:
-            for i in range(1, 7):
-                channels.append(
-                    self._int_to_board(
-                        self._board.pieces_mask(piece_type=i, color=color),
-                        self.turn))
-        # channels.append(np.full((6,5), int(no_progress_count)))
-        channels.append(np.full((6,5), float(total_move_count)) / MAX_NUM_MOVES_ALLOWED)
-        self._board_array = np.asarray(channels)
-        
-
         # legal moves
         self._legal_moves_uci = list(self._board.legal_moves)
         legal_moves_codes = [MOVES_DICT[self.turn][move.uci()[:4]] for move in self._legal_moves_uci]
@@ -91,9 +67,6 @@ class MinitChessEpisode(Episode):
     def is_done(self):
         return self._done
     
-    def get_board_array(self):
-        return self._board_array
-
     def get_legal_moves(self):
         return self._legal_moves
 

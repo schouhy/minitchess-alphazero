@@ -4,7 +4,12 @@ import numpy as np
 import torch
 
 NUM_ACTIONS = 554
-NUM_CHANNELS_BOARD_ARRAY = 13
+CODES = {v: k for k, v in enumerate('0prbnqk')}
+REP = {'/': '', **{str(i): ''.join(['0'] * i) for i in range(1, 6)}}
+EMBEDDING_DIM = 4
+MAX_NUM_MOVES_ALLOWED = 30
+
+
 class ConvBlock(torch.nn.Module):
     def __init__(self,
                  nin,
@@ -46,31 +51,46 @@ class ResidualBlock(torch.nn.Module):
 class Network(torch.nn.Module):
     def __init__(self, num_actions=NUM_ACTIONS):
         super(Network, self).__init__()
+        self.emb = torch.nn.Embedding(7, EMBEDDING_DIM)
         layers = []
-        layers.append(ConvBlock(NUM_CHANNELS_BOARD_ARRAY, 256, 3, 1, 1))
+        layers.append(ConvBlock(EMBEDDING_DIM * 2, 256, 3, 1, 1))
         for _ in range(5):
             layers.append(ResidualBlock(256, 256, 256))
         self.resbody = torch.nn.Sequential(*layers)
         self.pconv = ConvBlock(256, 2, 1, 1, 0)
-        self.plinear = torch.nn.Linear(2 * 6 * 5, num_actions)
+        self.plinear = torch.nn.Linear(2 * 6 * 5 + 1, num_actions)
 
         self.vconv = ConvBlock(256, 1, 1, 1, 0)
-        self.vlinear = torch.nn.Sequential(
-                torch.nn.Linear(6 * 5, 256),
-                torch.nn.ReLU(),
-                torch.nn.Linear(256, 1), 
-                torch.nn.Tanh())
+        self.vlinear = torch.nn.Sequential(torch.nn.Linear(6 * 5 + 1, 256),
+                                           torch.nn.ReLU(),
+                                           torch.nn.Linear(256, 1),
+                                           torch.nn.Tanh())
 
     @staticmethod
-    def _from_numpy(x):
-        return torch.FloatTensor(x)[None]
+    def tokenize(bfen):
+        for a, b in REP.items():
+            bfen = bfen.replace(a, b)
+        white = [CODES.get(o.lower() if o.isupper() else '0') for o in bfen]
+        black = [CODES.get(o if o.islower() else '0') for o in bfen]
+        return white + black
 
-    def forward(self, x):
-        if isinstance(x, np.ndarray):
-            x = self._from_numpy(x)
-        x = self.resbody(x)
-        p = self.plinear(self.pconv(x).view(-1,  2 * 6 * 5))
-        v = self.vlinear(self.vconv(x).view(-1, 6 * 5))
+    @classmethod
+    def process_observation(cls, observation):
+        bfen, side, halfmove_clock, fullmove_clock = observation.split()
+        tokens = cls.tokenize(bfen)
+        channels = torch.LongTensor(tokens).reshape(1, 2, 6, 5)
+        clock = torch.tensor([[float(fullmove_clock) / MAX_NUM_MOVES_ALLOWED]]).float()
+        return channels, clock
+
+    def forward(self, input_data):
+        channels, clock = input_data
+        channels = self.emb(channels).permute(0, 1, 4, 2, 3)
+        channels = channels.contiguous().view(-1, EMBEDDING_DIM * 2, 6, 5)
+        channels = self.resbody(channels)
+        px = self.pconv(channels).view(-1, 2 * 6 * 5)
+        p = self.plinear(torch.cat([px, clock], dim=1))
+        vx = self.vconv(channels).view(-1, 6 * 5)
+        v = self.vlinear(torch.cat([vx, clock], dim=1))
         return p, v
 
 

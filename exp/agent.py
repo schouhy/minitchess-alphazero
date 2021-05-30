@@ -54,7 +54,7 @@ class MonteCarloTreeSearch:
             legal_moves = episode.get_legal_moves()
             self['Q'][node] = np.zeros(len(legal_moves))
             self['N'][node] = np.zeros(len(legal_moves))
-            p, v = self._model(episode.get_board_array())
+            p, v = self._model(self._model.process_observation(node))
             p = p[0][legal_moves].softmax(0).data.cpu().numpy()
             if is_root_node:
                 p = p*0.75 + 0.25*np.random.dirichlet([0.6]*len(legal_moves))
