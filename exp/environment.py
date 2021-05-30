@@ -23,6 +23,8 @@ with open('moves_dict.json', 'r') as file:
 MOVES_DICT = {True: MOVES_DICT['w'], False: MOVES_DICT['b']}
 MOVES_DICT_INV = {side: {v: k for k, v in MOVES_DICT[side].items()} for side in [True, False]}
 NUM_ACTIONS = len(MOVES_DICT[True])
+
+# TODO: Mover esto a python-chess e importar esta variable de ahí
 MAX_NUM_MOVES_ALLOWED = 30
 
 
