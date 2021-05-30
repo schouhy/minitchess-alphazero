@@ -72,7 +72,7 @@ class MQTTDataset:
 class SimulatePuppet:
     def __init__(self, userid, publish_topic):
         self._env = MinitChessEnvironment()
-        self._network = Network()
+        self._network = Network().eval()
         self._policy = SimpleAlphaZeroPolicy(network=self._network)
         self._userid = userid
         self._publish_topic = publish_topic
@@ -111,11 +111,12 @@ class SimulatePuppet:
             dataset = MQTTDataset(mqtt_client, self)
             agents = [SimpleAlphaZeroAgent(environment=self._env,  policy=self._policy, num_simulations=NUM_SIMULATIONS) for _ in range(2)]
             callbacks = [InfoRecorder(dataset), MonteCarloInit(agents[0]), MonteCarloInit(agents[1])]
-            run_episodes(self._env,
-                         RoundRobinReferee(agent_tuple=tuple(agents)),
-                         num_episodes,
-                         callbacks=callbacks, 
-                         use_tqdm=False)
+            with torch.no_grad():
+                run_episodes(self._env,
+                             RoundRobinReferee(agent_tuple=tuple(agents)),
+                             num_episodes,
+                             callbacks=callbacks, 
+                             use_tqdm=False)
         except Exception as e:
             logging.error(f'Exception occurred: {e}')
         finally:
