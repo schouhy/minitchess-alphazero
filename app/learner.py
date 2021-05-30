@@ -65,7 +65,7 @@ last_episode_period = 0
 episode_frequency = 100
 batch_size = 64
 epochs = 20
-optim_params = {'lr': 1e-1}
+optim_params = {'lr': 1e-2, 'momentum': 0.9, 'weight_decay': 1e-4}
 
 learner = LearnPuppet(USERID, batch_size, epochs, optim_params)
 if INITIALIZE_WITH_REMOTE_WEIGHTS:

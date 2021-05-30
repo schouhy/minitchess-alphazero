@@ -62,7 +62,7 @@ class SimpleAlphaZeroLearner(BaseLearner):
         self._optim_params = optim_params
 
     def update(self, dataset: SimpleAlphaZeroDataset):
-        optimizer = torch.optim.AdamW(self._network.parameters(), **self._optim_params)
+        optimizer = torch.optim.SGD(self._network.parameters(), **self._optim_params)
         dataloader = DataLoader(dataset,
                                 batch_size=self._batch_size,
                                 shuffle=True,
