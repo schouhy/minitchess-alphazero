@@ -94,52 +94,52 @@ class SimpleAlphaZeroLearner(BaseLearner):
             logging.info(f'Epoch {epoch}: {metric.value:.2f}')
 
 
-#         # Compete against older version
-        old_network = Network()
-        old_network.load_state_dict(old_state_dict)
-        old_policy = SimpleAlphaZeroPolicy(old_network)
-        old_agent = SimpleAlphaZeroAgent(self._env, old_policy,
-                                         self._num_simulations)
-
-        new_policy = SimpleAlphaZeroPolicy(model)
-        new_agent = SimpleAlphaZeroAgent(self._env, new_policy,
-                                         self._num_simulations)
-        new_agent_wins = 0
-        old_agent_wins = 0
-        with torch.no_grad():
-            model.eval()
-            # New agent plays white
-            referee = RoundRobinReferee((new_agent, old_agent))
-            winner_recorder = WinnerRecorder(referee)
-            run_episodes(self._env,
-                         referee,
-                         n_episodes=ARENA_GAME_NUMBER_PER_SIDE,
-                         callbacks=[
-                             winner_recorder,
-                             MonteCarloInit(old_agent),
-                             MonteCarloInit(new_agent),
-                             RefereeInit(referee)
-                         ])
-            new_agent_wins += winner_recorder.results[False]
-            old_agent_wins += winner_recorder.results[True]
-            logging.info(
-                f'New agent playing with white results: {winner_recorder.results}'
-            )
-            # New agent plays black
-            referee = RoundRobinReferee((old_agent, new_agent))
-            winner_recorder = WinnerRecorder(referee)
-            run_episodes(self._env,
-                         referee,
-                         n_episodes=ARENA_GAME_NUMBER_PER_SIDE,
-                         callbacks=[
-                             winner_recorder,
-                             MonteCarloInit(old_agent),
-                             MonteCarloInit(new_agent),
-                             RefereeInit(referee)
-                         ])
-            logging.info(
-                f'New agent playing with black results: {winner_recorder.results}'
-            )
-            new_agent_wins += winner_recorder.results[True]
-            old_agent_wins += winner_recorder.results[False]
-        return new_agent_wins / (new_agent_wins + old_agent_wins + 1e-8)
+# #         # Compete against older version
+#         old_network = Network()
+#         old_network.load_state_dict(old_state_dict)
+#         old_policy = SimpleAlphaZeroPolicy(old_network)
+#         old_agent = SimpleAlphaZeroAgent(self._env, old_policy,
+#                                          self._num_simulations)
+# 
+#         new_policy = SimpleAlphaZeroPolicy(model)
+#         new_agent = SimpleAlphaZeroAgent(self._env, new_policy,
+#                                          self._num_simulations)
+#         new_agent_wins = 0
+#         old_agent_wins = 0
+#         with torch.no_grad():
+#             model.eval()
+#             # New agent plays white
+#             referee = RoundRobinReferee((new_agent, old_agent))
+#             winner_recorder = WinnerRecorder(referee)
+#             run_episodes(self._env,
+#                          referee,
+#                          n_episodes=ARENA_GAME_NUMBER_PER_SIDE,
+#                          callbacks=[
+#                              winner_recorder,
+#                              MonteCarloInit(old_agent),
+#                              MonteCarloInit(new_agent),
+#                              RefereeInit(referee)
+#                          ])
+#             new_agent_wins += winner_recorder.results[False]
+#             old_agent_wins += winner_recorder.results[True]
+#             logging.info(
+#                 f'New agent playing with white results: {winner_recorder.results}'
+#             )
+#             # New agent plays black
+#             referee = RoundRobinReferee((old_agent, new_agent))
+#             winner_recorder = WinnerRecorder(referee)
+#             run_episodes(self._env,
+#                          referee,
+#                          n_episodes=ARENA_GAME_NUMBER_PER_SIDE,
+#                          callbacks=[
+#                              winner_recorder,
+#                              MonteCarloInit(old_agent),
+#                              MonteCarloInit(new_agent),
+#                              RefereeInit(referee)
+#                          ])
+#             logging.info(
+#                 f'New agent playing with black results: {winner_recorder.results}'
+#             )
+#             new_agent_wins += winner_recorder.results[True]
+#             old_agent_wins += winner_recorder.results[False]
+#         return new_agent_wins / (new_agent_wins + old_agent_wins + 1e-8)

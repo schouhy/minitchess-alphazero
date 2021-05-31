@@ -192,10 +192,10 @@ class LearnPuppet:
         self._network.load_state_dict(self.weights)
         result = self._learner.update(self._dataset)
         logging.info(f'New agent won {result*100}% of games')
-        if result > 0.55:
-            self.weights = self._network.state_dict()
-            self._init_dataset()
-            return self.get_weights_dict()
+        #if result > 0.55:
+        self.weights = self._network.state_dict()
+        self._init_dataset()
+        return self.get_weights_dict()
 
     def get_weights_dict(self):
         return {'weights': jsonpickle.encode(self.weights),
