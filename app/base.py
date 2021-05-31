@@ -199,5 +199,5 @@ class LearnPuppet:
         return self.get_weights_dict()
 
     def get_weights_dict(self):
-        return {'weights': zlib.compress(jsonpickle.encode(self.weights)),
+        return {'weights': zlib.compress(jsonpickle.encode(self.weights).encode()),
                 'version': self.weights_version}
