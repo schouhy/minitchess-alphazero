@@ -7,6 +7,7 @@ logging.warning('test')
 
 import os
 import json
+import zlib
 import requests
 from time import sleep
 
