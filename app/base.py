@@ -33,8 +33,8 @@ def download_weights():
     logging.info('Downloading weights...')
     if response.status_code == 200:
         logging.info('Successfully downloaded weights')
-        content = json.loads(response.content)
-        content['weights'] = jsonpickle.decode(zlib.decompress(content['weights']))
+        content = json.loads(zlib.decompress(response.content))
+        content['weights'] = jsonpickle.decode(content['weights'])
         return content
     raise Exception(f"RLWEB returned status code {response.status_code} while getting weights")
 
@@ -199,5 +199,5 @@ class LearnPuppet:
         return self.get_weights_dict()
 
     def get_weights_dict(self):
-        return {'weights': zlib.compress(jsonpickle.encode(self.weights).encode()),
+        return {'weights': jsonpickle.encode(self.weights),
                 'version': self.weights_version}

@@ -80,11 +80,12 @@ client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 client.connect(MQTT_BROKER_HOST, 1883, 60)
 client.loop_start()
 
-def push_weights(url, data):
+def push_weights(url, json_data):
     # Upload new weights
+    data = zlib.compress(json.dumps(json_data).encode())
     upload_success = False
     while not upload_success:
-        response = requests.post(url, json=data)
+        response = requests.post(url, data=data)
         status_code = response.status_code
         if status_code == 200:
             upload_success = True
