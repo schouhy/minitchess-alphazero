@@ -8,6 +8,7 @@ from enum import IntEnum
 from pathlib import Path
 
 import jsonpickle
+import zlib
 import requests
 import torch
 from erlyx import run_episodes
@@ -33,7 +34,7 @@ def download_weights():
     if response.status_code == 200:
         logging.info('Successfully downloaded weights')
         content = json.loads(response.content)
-        content['weights'] = jsonpickle.decode(content['weights'])
+        content['weights'] = jsonpickle.decode(zlib.decompress(content['weights']))
         return content
     raise Exception(f"RLWEB returned status code {response.status_code} while getting weights")
 
@@ -198,5 +199,5 @@ class LearnPuppet:
         return self.get_weights_dict()
 
     def get_weights_dict(self):
-        return {'weights': jsonpickle.encode(self.weights),
+        return {'weights': zlib.compress(jsonpickle.encode(self.weights)),
                 'version': self.weights_version}
