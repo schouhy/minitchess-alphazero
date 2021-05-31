@@ -66,22 +66,6 @@ class Network(torch.nn.Module):
                                            torch.nn.Linear(256, 1),
                                            torch.nn.Tanh())
 
-    @staticmethod
-    def tokenize(bfen):
-        for a, b in REP.items():
-            bfen = bfen.replace(a, b)
-        white = [CODES.get(o.lower() if o.isupper() else '0') for o in bfen]
-        black = [CODES.get(o if o.islower() else '0') for o in bfen]
-        return white + black
-
-    @classmethod
-    def process_observation(cls, observation):
-        bfen, side, halfmove_clock, fullmove_clock = observation.split()
-        tokens = cls.tokenize(bfen)
-        channels = torch.LongTensor(tokens).reshape(1, 2, 6, 5)
-        clock = torch.tensor([[float(fullmove_clock) / MAX_NUM_MOVES_ALLOWED]]).float()
-        return channels, clock
-
     def forward(self, input_data):
         channels, clock = input_data
         channels = self.emb(channels).permute(0, 1, 4, 2, 3)
@@ -93,6 +77,30 @@ class Network(torch.nn.Module):
         v = self.vlinear(torch.cat([vx, clock], dim=1))
         return p, v
 
+    @classmethod
+    def _player_side_view(cls, bfen, color):
+        assert color in ['w', 'b']
+        return bfen if color == 'w' else bfen[::-1].swapcase()
+
+    @classmethod
+    def tokenize(cls, bfen, color):
+        bfen = cls._player_side_view(bfen, color)
+        for a, b in REP.items():
+            bfen = bfen.replace(a, b)
+        white = [CODES.get(o.lower() if o.isupper() else '0') for o in bfen]
+        black = [CODES.get(o if o.islower() else '0') for o in bfen]
+        return white + black
+
+    @classmethod
+    def process_observation(cls, observation):
+        bfen, color, halfmove_clock, fullmove_clock = observation.split()
+        tokens = cls.tokenize(bfen, color)
+        channels = torch.LongTensor(tokens).reshape(1, 2, 6, 5)
+        clock = float(fullmove_clock)
+        if color == 'b':
+            clock += 0.5
+        clock = torch.tensor([[clock / MAX_NUM_MOVES_ALLOWED]]).float()
+        return channels, clock
 
 class SimpleAlphaZeroPolicy(Policy):
     def __init__(self, network=None):
