@@ -14,7 +14,7 @@ import paho.mqtt.client as mqtt
 
 from app.base import LearnPuppet, MasterOfPuppetsStatus, download_weights
 
-INITIALIZE_WITH_REMOTE_WEIGHTS = True
+INITIALIZE_WITH_REMOTE_WEIGHTS = False
 
 USERID = os.getenv('USERID', os.getenv('HOSTNAME', 'Player'))
 
