@@ -63,8 +63,8 @@ def on_message(client, userdata, msg):
 
 
 last_episode_period = 0
-episode_frequency = 30
-batch_size = 64
+episode_frequency = 50
+batch_size = 32
 epochs = 1
 optim_params = {'lr': 0.2}
 

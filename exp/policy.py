@@ -7,6 +7,8 @@ NUM_ACTIONS = 554
 CODES = {v: k for k, v in enumerate('0prbnqk')}
 REP = {'/': '', **{str(i): ''.join(['0'] * i) for i in range(1, 6)}}
 EMBEDDING_DIM = 4
+
+# TODO: Traer esto directamente de python-chess
 MAX_NUM_MOVES_ALLOWED = 30
 
 
@@ -54,7 +56,7 @@ class Network(torch.nn.Module):
         self.emb = torch.nn.Embedding(7, EMBEDDING_DIM)
         layers = []
         layers.append(ConvBlock(EMBEDDING_DIM * 2, 256, 3, 1, 1))
-        for _ in range(2):
+        for _ in range(5):
             layers.append(ResidualBlock(256, 256, 256))
         self.resbody = torch.nn.Sequential(*layers)
         self.pconv = ConvBlock(256, 2, 1, 1, 0)
