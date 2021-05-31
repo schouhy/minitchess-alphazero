@@ -54,8 +54,8 @@ class Network(torch.nn.Module):
         self.emb = torch.nn.Embedding(7, EMBEDDING_DIM)
         layers = []
         layers.append(ConvBlock(EMBEDDING_DIM * 2, 256, 3, 1, 1))
-        for _ in range(4):
-            layers.append(ResidualBlock(256, 512, 256))
+        for _ in range(2):
+            layers.append(ResidualBlock(256, 256, 256))
         self.resbody = torch.nn.Sequential(*layers)
         self.pconv = ConvBlock(256, 2, 1, 1, 0)
         self.plinear = torch.nn.Linear(2 * 6 * 5 + 1, num_actions)
