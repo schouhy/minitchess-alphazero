@@ -76,11 +76,10 @@ class MonteCarloTreeSearch:
             self._backprop(-self['terminal'][node], chain)
             return
 
-        Q, N = self['Q'][node], self['N'][node]
-        P = self['P'][node].copy()
+        Q, N, P = self['Q'][node], self['N'][node], self['P'][node]
         legal_moves = self['legal_moves'][node]
-        if len(chain) == 0: # is root node
-            P = P * 0.75 + 0.25 * np.random.dirichlet([0.6] * len(legal_moves))
+        if len(chain) == 0:  # is root node
+            P = 0.75 * P + 0.25 * np.random.dirichlet([0.6] * len(legal_moves))
         legal_moves = self['legal_moves'][node]
         u = Q + self._cpuct * P * np.sqrt(N.sum()) / (1 + N)
         action = u.argmax()
