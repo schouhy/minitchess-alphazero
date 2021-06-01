@@ -31,7 +31,7 @@ class MonteCarloTreeSearch:
             'N': {},
             'P': {},
             'terminal': {},
-            'visited': [],
+            'visited': set(),
             'legal_moves': {},
         }
 
@@ -41,47 +41,61 @@ class MonteCarloTreeSearch:
     def simulate(self, num_simulations, observation):
         for _ in range(num_simulations):
             episode, _ = self._environment.new_episode(fen=observation)
-            self._search(episode, is_root_node=True)
+            self._search(episode)
         return self._data
 
-    def _search(self, episode, is_root_node=False):
+    def _backprop(self, value, chain):
+        for node, action in chain[::-1]:
+            value = -value
+            Q, N = self['Q'][node], self['N'][node]
+            Q[action] = (N[action] * Q[action] + value) / (N[action] + 1)
+            N[action] += 1
+
+    def _search(self, episode, chain=None):
+        chain = chain or []
         node = episode.get_observation()
         if node not in self['visited']:
-            self['visited'].append(node)
-            if episode.is_done(): 
-                self['terminal'][node]= -episode.get_reward()
-                return -self['terminal'][node]
+            self['visited'].add(node)
+            if episode.is_done():
+                value = -episode.get_reward()
+                self['terminal'][node] = value
+                self._backprop(value, chain)
+                return
             legal_moves = episode.get_legal_moves()
             self['Q'][node] = np.zeros(len(legal_moves))
             self['N'][node] = np.zeros(len(legal_moves))
             p, v = self._model(self._model.process_observation(node))
-            p = p[0][legal_moves].softmax(0).data.cpu().numpy()
-            if is_root_node:
-                p = p*0.75 + 0.25*np.random.dirichlet([0.6]*len(legal_moves))
-            self['P'][node] = p 
+            p = p[0][legal_moves].softmax(0).data.numpy()
+            v = v.item()
+            self['P'][node] = p
             self['legal_moves'][node] = legal_moves
-            return -v[0]
+            self._backprop(v, chain)
+            return
 
         if node in self['terminal'].keys():
-            return -self['terminal'][node]
+            self._backprop(-self['terminal'][node], chain)
+            return
 
-        Q, N, P = self['Q'][node], self['N'][node], self['P'][node]
+        Q, N = self['Q'][node], self['N'][node]
+        P = self['P'][node].copy()
         legal_moves = self['legal_moves'][node]
-        if is_root_node:
-            P = P*0.75 + 0.25*np.random.dirichlet([0.6]*len(legal_moves))
-
+        if len(chain) == 0: # is root node
+            P = P * 0.75 + 0.25 * np.random.dirichlet([0.6] * len(legal_moves))
+        legal_moves = self['legal_moves'][node]
         u = Q + self._cpuct * P * np.sqrt(N.sum()) / (1 + N)
         action = u.argmax()
         episode.step(legal_moves[action], return_status=False)
-        v = self._search(episode)
-
-        Q[action] = (N[action] * Q[action] + v) / (N[action] + 1)
-        N[action] += 1
-        return -v
+        chain.append((node, action))
+        self._search(episode, chain)
 
 
 class SimpleAlphaZeroAgent(PolicyAgent):
-    def __init__(self, environment, policy, num_simulations, cpuct=1, tau_change=6):
+    def __init__(self,
+                 environment,
+                 policy,
+                 num_simulations,
+                 cpuct=1,
+                 tau_change=6):
         super(SimpleAlphaZeroAgent, self).__init__(policy)
         self._environment = environment
         self._num_simulations = num_simulations
@@ -95,8 +109,7 @@ class SimpleAlphaZeroAgent(PolicyAgent):
         self._count = 0
 
     def select_action(self, observation):
-        info = self.policy.get_distribution(observation,
-                                            self._mcts,
+        info = self.policy.get_distribution(observation, self._mcts,
                                             self._num_simulations)
         num_moves = int(observation.split()[3])
         if num_moves < self._tau_change:
